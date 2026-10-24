@@ -309,12 +309,12 @@ export class JobController {
       const { jobId } = paramsCheck.data;
 
       //Call service
-      await this.jobService.delete(jobId, req.userId, req.log);
+      const deleted = await this.jobService.delete(jobId, req.userId, req.log);
 
       //Return resource response
       res.status(200).json({
         status: "success",
-        data: true,
+        data: deleted,
       });
     } catch (error) {
       next(error);

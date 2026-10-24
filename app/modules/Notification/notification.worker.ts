@@ -85,6 +85,7 @@ export class NotificationWorker {
         jobAndUser.job,
         jobAndUser.users,
         execution,
+        log,
       );
     } else {
       //Send slack
@@ -93,6 +94,7 @@ export class NotificationWorker {
         jobAndUser.job,
         jobAndUser.users,
         execution,
+        log,
       );
     }
   }
@@ -102,6 +104,7 @@ export class NotificationWorker {
     job: JobType,
     user: UserType,
     execution: ExecutionType,
+    log: Logger,
   ): Promise<void> {
     try {
       if (notication.event === "success") {
@@ -115,11 +118,15 @@ export class NotificationWorker {
           reportUrl: "",
         };
 
-        await slack.chat.postMessage({
+        const data = await slack.chat.postMessage({
           text: successSlack(_params).text,
           blocks: successSlack(_params).blocks,
           channel: notication.channelId!,
         });
+        log.info(
+          { channel: notication.channelId, ts: (data as { ts?: string }).ts },
+          "slack message posted",
+        );
         return;
       }
 
@@ -147,10 +154,21 @@ export class NotificationWorker {
           channel: notication.channelId!,
         });
 
+        log.info(
+          { channel: notication.channelId, ts: (data as { ts?: string }).ts },
+          "slack message posted",
+        );
         return;
       }
     } catch (error) {
-      //Log error here
+      log.error(
+        {
+          channel: notication.channelId,
+          err: error instanceof Error ? error.message : String(error),
+        },
+        "slack delivery failed",
+      );
+      throw error;
     }
   }
 
@@ -159,6 +177,7 @@ export class NotificationWorker {
     job: JobType,
     user: UserType,
     execution: ExecutionType,
+    log: Logger,
   ): Promise<void> {
     //Build email
 
@@ -175,12 +194,29 @@ export class NotificationWorker {
         // TODO reportUrl (yours, later): `${APP_URL}/jobs/${job.id}/report` — base URL from env/config.
         reportUrl: "",
       };
-      await resend.emails.send({
+      const sent = await resend.emails.send({
         from: process.env.EMAIL_FROM,
         to: [notication.target],
         subject: `[FreeCron] Success: ${_params.jobName} (${_params.status}, ${this.formatDuration(_params.duration)})`,
         html: successMail(_params),
       });
+      if (sent?.error) {
+        log.error(
+          {
+            target: notication.target,
+            err: sent.error.message ?? String(sent.error),
+          },
+          "email rejected by resend",
+        );
+        return;
+      }
+      log.info(
+        {
+          target: notication.target,
+          messageId: sent.data?.id,
+        },
+        "email delivered",
+      );
       return;
     }
 
@@ -202,12 +238,29 @@ export class NotificationWorker {
         fixUrl: "",
         command: job.httpCommand,
       };
-      await resend.emails.send({
+      const sent = await resend.emails.send({
         from: process.env.EMAIL_FROM,
         to: [notication.target],
         subject: `[FreeCron] Failed: ${job.name} (${execution.statusCode || "no response"})`,
         html: failedMail(_params),
       });
+      if (sent?.error) {
+        log.error(
+          {
+            target: notication.target,
+            err: sent.error.message ?? String(sent.error),
+          },
+          "email rejected by resend",
+        );
+        return;
+      }
+      log.info(
+        {
+          target: notication.target,
+          messageId: sent.data?.id,
+        },
+        "email delivered",
+      );
       return;
     }
   }

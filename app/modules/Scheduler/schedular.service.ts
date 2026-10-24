@@ -42,7 +42,7 @@ export class SchedularService {
         delayMs: delay,
         priority: 10,
       },
-      "job scheduled with delay",
+      "job scheduled",
     );
   }
 
