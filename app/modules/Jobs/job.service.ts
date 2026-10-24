@@ -48,13 +48,8 @@ export class JobService {
     userId: string,
     log: Logger,
   ): Promise<jobResponseDTO> {
-    //Validate the cron expression
-    const isValidCron = this.cronManger.validateCron(data.cronExpression);
+  
 
-    if (!isValidCron) {
-      console.log("invalid cron, return unsatisfied");
-      throw new Error("INVALID CRON");
-    }
 
     //Calculate system logic and defaults (next and last runs)
     const nextRunAt = this.cronManger.findNextRun(data.cronExpression);
