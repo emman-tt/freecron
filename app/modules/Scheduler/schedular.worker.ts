@@ -122,16 +122,22 @@ export class ScheduleWorker {
 
       const response = await fetch(`${fetchedjob.httpCommand}`, {
         method: fetchedjob.httpMethod,
-        body: JSON.stringify({ ...fetchedjob.httpBody }),
+        body:
+          fetchedjob.httpMethod === "GET"
+            ? null
+            : JSON.stringify({ ...fetchedjob.httpBody }),
         headers: fetchedjob.httpHeader,
         signal: AbortSignal.timeout(fetchedjob.timeout),
       });
 
       const httpCallDuration = Date.now() - httpCallStart;
+      const statusCode = response.status;
       //Throw custom http error (4xx,5xx) for the processor to catch and send to failed state
       if (!response.ok) {
-        const errorBody = await response.json();
-        const errorMessage = `HTTP error , ${response.status}`;
+        const errorBody = response.headers.get("Content-type")?.includes("text")
+          ? await response.text()
+          : await response.json();
+        const errorMessage = `HTTP error , ${statusCode}`;
         isHttpError = true;
         //   Record execution result failed after total attempts
         const maxAttempts = job?.opts.attempts;
@@ -142,7 +148,7 @@ export class ScheduleWorker {
           log.error(
             {
               httpCommand: fetchedjob.httpCommand,
-              status: response.status,
+              status: statusCode,
               durationMs: httpCallDuration,
               executionId: job.data.executionId,
               attemptsStarted: job.attemptsStarted,
@@ -160,7 +166,7 @@ export class ScheduleWorker {
               headers: response.headers,
               body: errorBody,
             },
-            response.status,
+            statusCode,
             new Date(),
             errorMessage,
             log,
@@ -171,12 +177,7 @@ export class ScheduleWorker {
             lastRunAt: new Date(),
           };
 
-          await this.jobService.update(
-            jobId,
-            updateData,
-            jobData.userId,
-            log,
-          );
+          await this.jobService.update(jobId, updateData, jobData.userId, log);
 
           //    Sends notifications to the user - Notification service needed
         } else {
@@ -184,7 +185,7 @@ export class ScheduleWorker {
           log.warn(
             {
               httpCommand: fetchedjob.httpCommand,
-              status: response.status,
+              status: statusCode,
               durationMs: httpCallDuration,
               executionId: job.data.executionId,
               attemptsStarted: job.attemptsStarted,
@@ -198,7 +199,9 @@ export class ScheduleWorker {
         throw new Error(errorMessage);
       }
 
-      const body = await response.json();
+      const body = response.headers.get("Content-type")?.includes("text")
+        ? await response.text()
+        : await response.json();
 
       //Log http command successful
       log.info(
@@ -206,7 +209,7 @@ export class ScheduleWorker {
           httpCommand: fetchedjob.httpCommand,
           httpMethod: fetchedjob.httpMethod,
           executionId: job.data.executionId,
-          status: response.status,
+          status: statusCode,
           durationMs: httpCallDuration,
           attempts: job.opts.attempts,
           attemptsStarted: job.attemptsStarted,
@@ -223,7 +226,7 @@ export class ScheduleWorker {
           headers: response.headers,
           body: body,
         },
-        response.status,
+        statusCode,
         new Date(),
         log,
       );

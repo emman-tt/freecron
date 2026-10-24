@@ -204,7 +204,7 @@ describe("Execution Service", () => {
     expect(executionRepo.update).toHaveBeenCalledWith(failUpdateDTO, executionEntity.id!);
     expect(mockLog.error).toHaveBeenCalledWith(
       expect.objectContaining({ error: "Internal server error" }),
-      "execution failed ",
+      "execution failed",
     );
     expect(result).toEqual({ ...executionEntity, status: "failed" });
   });

@@ -133,7 +133,7 @@ describe("Job Service", () => {
     countByUser: jest.fn<(userId: string, filters?: unknown) => Promise<number>>(),
     findDueJobs: jest.fn<(nowDate: Date) => Promise<Job[]>>(),
     toggleActive: jest.fn<(id: number) => Promise<Job>>(),
-    delete: jest.fn<(id: number) => Promise<void>>(),
+    delete: jest.fn<(id: number) => Promise<Job>>(),
     updateRunTimes:
       jest.fn<(id: number, lastRunAt: Date, nextRunAt: Date) => Promise<Job>>(),
     update: jest.fn<(id: number, updateDTO: updateJobDTO) => Promise<Job>>(),
@@ -206,7 +206,7 @@ describe("Job Service", () => {
     //Assert
 
     await expect(
-      jobService.updateJob(userDTO.jobId, {}, userDTO.userId, mockLog),
+      jobService.update(userDTO.jobId, {}, userDTO.userId, mockLog),
     ).rejects.toThrow(PermissionError);
     expect(jobRepo.update).not.toHaveBeenCalled();
     expect(mockLog.warn).toHaveBeenCalledWith(
@@ -241,9 +241,10 @@ describe("Job Service", () => {
   it("should delete a job", async () => {
     //Arrange
     jobRepo.findById.mockResolvedValue(returnedJobFromDb);
+    jobRepo.delete.mockResolvedValue(returnedJobFromDb);
 
     //Act
-    await jobService.deleteJob(userDTO.jobId, userDTO.userId, mockLog);
+    await jobService.delete(userDTO.jobId, userDTO.userId, mockLog);
 
     //Assert
     expect(cacheRepo.delete).toHaveBeenCalledTimes(2);
@@ -501,7 +502,7 @@ describe("Job Service", () => {
     jobRepo.create.mockResolvedValue(returnedJobFromDb);
 
     // Act
-    const result = await jobService.createJob(
+    const result = await jobService.create(
       createJobEntity,
       "sdjdn32e233",
       mockLog,

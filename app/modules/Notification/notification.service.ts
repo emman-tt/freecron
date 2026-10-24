@@ -107,7 +107,7 @@ export class NotificationService {
   ): Promise<notificationResponseDTO> {
     const job = await this.jobService.findJobSystem(jobId, log);
     if (job.userId !== userId) {
-      log.warn({ jobId, userId }, "job doesnt belong to user");
+      log.warn({ jobId, userId }, "job doesn't belong to user");
       throw new PermissionError();
     }
 
@@ -152,7 +152,7 @@ export class NotificationService {
 
     const job = await this.jobService.findJobSystem(fetched.jobId, log);
     if (job.userId !== userId) {
-      log.warn({ jobId: fetched.jobId, userId }, "job doesnt belong to user");
+      log.warn({ jobId: fetched.jobId, userId }, "job doesn't belong to user");
       throw new PermissionError();
     }
 
@@ -186,7 +186,7 @@ export class NotificationService {
     // Ownership first — the list must never leak across users
     const job = await this.jobService.findJobSystem(jobId, log);
     if (job.userId !== userId) {
-      log.warn({ jobId, userId }, "job doesnt belong to user");
+      log.warn({ jobId, userId }, "job doesn't belong to user");
       throw new PermissionError();
     }
 
@@ -219,7 +219,7 @@ export class NotificationService {
 
     const job = await this.jobService.findJobSystem(fetched.jobId, log);
     if (job.userId !== userId) {
-      log.warn({ jobId: fetched.jobId, userId }, "job doesnt belong to user");
+      log.warn({ jobId: fetched.jobId, userId }, "job doesn't belong to user");
       throw new PermissionError();
     }
 
@@ -252,7 +252,7 @@ export class NotificationService {
 
     const job = await this.jobService.findJobSystem(fetched.jobId, log);
     if (job.userId !== userId) {
-      log.warn({ jobId: fetched.jobId, userId }, "job doesnt belong to user");
+      log.warn({ jobId: fetched.jobId, userId }, "job doesn't belong to user");
       throw new PermissionError();
     }
 
@@ -281,7 +281,7 @@ export class NotificationService {
 
     const job = await this.jobService.findJobSystem(fetched.jobId, log);
     if (job.userId !== userId) {
-      log.warn({ jobId: fetched.jobId, userId }, "job doesnt belong to user");
+      log.warn({ jobId: fetched.jobId, userId }, "job doesn't belong to user");
       throw new PermissionError();
     }
 

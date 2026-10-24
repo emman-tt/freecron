@@ -7,6 +7,7 @@ import type {
   User as UserType,
 } from "../../shared/types/entities.js";
 import { Worker, UnrecoverableError } from "bullmq";
+import type { Logger } from "pino";
 import { resend } from "../../shared/lib/mail.service.js";
 import type { NotificationService } from "./notification.service.js";
 import { workerLogger as logger } from "../../shared/lib/logger.service.js";

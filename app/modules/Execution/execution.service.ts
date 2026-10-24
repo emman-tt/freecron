@@ -86,7 +86,7 @@ export class ExecutionService {
         executionId: execution.id,
         duration: duration,
       },
-      "execution completed ",
+      "execution completed",
     );
     return updated;
   }
@@ -131,7 +131,7 @@ export class ExecutionService {
         duration: updated?.duration,
         error: error,
       },
-      "execution failed ",
+      "execution failed",
     );
 
     return updated;

@@ -322,15 +322,20 @@ describe("Worker integration test", () => {
 
       // First attempt dies, the retry succeeds. Attempt 1 is not the last one
       // (attemptsStarted 1 < attempts 2), so the Processor rethrows without
-      // recording a terminal result and BullMQ retries the job.
       let attempt = 0;
-      fetchMock.mockResponse(() => {
-        attempt += 1;
-        if (attempt === 1) {
+      fetchMock.mockResponses(
+        () => {
+          attempt += 1;
           return Promise.reject(new Error("ECONNRESET"));
-        }
-        return JSON.stringify({ success: true, data: "recovered" });
-      });
+        },
+        () => {
+          attempt += 1;
+          return new Response(JSON.stringify({ success: true, data: "recovered" }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        },
+      );
 
       //Act
       const queuedJob = await scheduleQueue.add(queueJob);

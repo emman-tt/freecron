@@ -28,7 +28,7 @@ describe("Job Controller", () => {
   };
 
   const jobService = {
-    createJob:
+    create:
       jest.fn<
         (data: unknown, userId: string, log: Logger) => Promise<jobResponseDTO>
       >(),
@@ -51,7 +51,7 @@ describe("Job Controller", () => {
       jest.fn<
         (jobId: number, userId: string, log: Logger) => Promise<jobResponseDTO>
       >(),
-    updateJob:
+    update:
       jest.fn<
         (
           jobId: number,
@@ -62,7 +62,7 @@ describe("Job Controller", () => {
       >(),
     runJobNow:
       jest.fn<(jobId: number, userId: string, log: Logger) => Promise<void>>(),
-    deleteJob:
+    delete:
       jest.fn<(jobId: number, userId: string, log: Logger) => Promise<void>>(),
   };
 
@@ -116,7 +116,7 @@ describe("Job Controller", () => {
 
   it("should create a job and return 201", async () => {
     //Arrange
-    jobService.createJob.mockResolvedValue(jobDTO);
+    jobService.create.mockResolvedValue(jobDTO);
     const req = mockReq({
       body: {
         name: "astroverse",
@@ -136,7 +136,7 @@ describe("Job Controller", () => {
     await controller.create(req, res, next as unknown as NextFunction);
 
     //Assert
-    expect(jobService.createJob).toHaveBeenCalledWith(
+    expect(jobService.create).toHaveBeenCalledWith(
       expect.objectContaining({ name: "astroverse" }),
       USER_ID,
       mockLog,
@@ -169,7 +169,7 @@ describe("Job Controller", () => {
     await controller.create(req, res, next as unknown as NextFunction);
 
     //Assert
-    expect(jobService.createJob).not.toHaveBeenCalled();
+    expect(jobService.create).not.toHaveBeenCalled();
     expect(next).toHaveBeenCalledTimes(1);
     expect(next.mock.calls[0]?.[0]).toBeInstanceOf(ValidationError);
   });
@@ -196,7 +196,7 @@ describe("Job Controller", () => {
     await controller.create(req, res, next as unknown as NextFunction);
 
     //Assert
-    expect(jobService.createJob).not.toHaveBeenCalled();
+    expect(jobService.create).not.toHaveBeenCalled();
     expect(next.mock.calls[0]?.[0]).toBeInstanceOf(ValidationError);
   });
 
@@ -351,7 +351,7 @@ describe("Job Controller", () => {
 
   it("should update from params id, authenticated user and body payload", async () => {
     //Arrange
-    jobService.updateJob.mockResolvedValue({ ...jobDTO, name: "renamed" });
+    jobService.update.mockResolvedValue({ ...jobDTO, name: "renamed" });
     const req = mockReq({
       params: { jobId: "5" },
       body: { name: "renamed" },
@@ -363,7 +363,7 @@ describe("Job Controller", () => {
     await controller.update(req, res, next as unknown as NextFunction);
 
     //Assert
-    expect(jobService.updateJob).toHaveBeenCalledWith(
+    expect(jobService.update).toHaveBeenCalledWith(
       5,
       { name: "renamed" },
       USER_ID,
@@ -385,7 +385,7 @@ describe("Job Controller", () => {
     await controller.update(req, res, next as unknown as NextFunction);
 
     //Assert
-    expect(jobService.updateJob).not.toHaveBeenCalled();
+    expect(jobService.update).not.toHaveBeenCalled();
     expect(next.mock.calls[0]?.[0]).toBeInstanceOf(ValidationError);
   });
 
@@ -408,7 +408,7 @@ describe("Job Controller", () => {
 
   it("should delete a job and return true", async () => {
     //Arrange
-    jobService.deleteJob.mockResolvedValue(undefined);
+    jobService.delete.mockResolvedValue(undefined);
     const req = mockReq({ params: { jobId: "5" } });
     const res = mockRes();
     const next = mockNext();
@@ -417,13 +417,13 @@ describe("Job Controller", () => {
     await controller.delete(req, res, next as unknown as NextFunction);
 
     //Assert
-    expect(jobService.deleteJob).toHaveBeenCalledWith(5, USER_ID, mockLog);
+    expect(jobService.delete).toHaveBeenCalledWith(5, USER_ID, mockLog);
     expect(res.json).toHaveBeenCalledWith({ status: "success", data: true });
   });
 
   it("should forward delete service errors to next", async () => {
     //Arrange
-    jobService.deleteJob.mockRejectedValue(new Error("db down"));
+    jobService.delete.mockRejectedValue(new Error("db down"));
     const req = mockReq({ params: { jobId: "5" } });
     const res = mockRes();
     const next = mockNext();

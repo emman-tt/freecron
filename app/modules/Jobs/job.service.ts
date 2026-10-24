@@ -117,7 +117,7 @@ export class JobService {
           jobId: jobId,
           userId: userId,
         },
-        "job doesnt belong to user",
+        "job doesn't belong to user",
       );
       throw new PermissionError();
     }
@@ -284,7 +284,7 @@ export class JobService {
           jobId: jobId,
           userId: userId,
         },
-        "job doesnt belong to user",
+        "job doesn't belong to user",
       );
       throw new PermissionError();
     }
@@ -320,7 +320,7 @@ export class JobService {
           jobId: jobId,
           userId: userId,
         },
-        "job doesnt belong to user",
+        "job doesn't belong to user",
       );
       throw new PermissionError();
     }
@@ -370,7 +370,7 @@ export class JobService {
           jobId: jobId,
           userId: userId,
         },
-        "job doesnt belong to user",
+        "job doesn't belong to user",
       );
       throw new PermissionError();
     }
@@ -402,7 +402,7 @@ export class JobService {
           jobId: jobId,
           userId: userId,
         },
-        "job doesnt belong to user",
+        "job doesn't belong to user",
       );
       throw new PermissionError();
     }
