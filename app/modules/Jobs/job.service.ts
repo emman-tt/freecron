@@ -275,6 +275,16 @@ export class JobService {
   async deleteJob(jobId: number, userId: string, log: Logger) {
     const fetchedJob = (await this.jobRepo.findById(jobId)) as Job;
 
+    if (!fetchedJob) {
+      log.warn(
+        {
+          jobId: jobId,
+          userId: userId,
+        },
+        "job not found",
+      );
+      throw new NotFoundError();
+    }
     // Check ownership  and store in cache
     if (fetchedJob.userId !== userId) {
       log.warn(
@@ -300,6 +310,16 @@ export class JobService {
   ): Promise<jobResponseDTO> {
     const fetchedJob = (await this.jobRepo.findById(jobId)) as Job;
 
+    if (!fetchedJob) {
+      log.warn(
+        {
+          jobId: jobId,
+          userId: userId,
+        },
+        "job not found",
+      );
+      throw new NotFoundError();
+    }
     // Check ownership  and store in cache
     if (fetchedJob.userId !== userId) {
       log.warn(
@@ -340,6 +360,16 @@ export class JobService {
   ): Promise<jobResponseDTO> {
     const fetchedJob = (await this.jobRepo.findById(jobId)) as Job;
 
+    if (!fetchedJob) {
+      log.warn(
+        {
+          jobId: jobId,
+          userId: userId,
+        },
+        "job not found",
+      );
+      throw new NotFoundError();
+    }
     // Check ownership  and store in cache
     if (fetchedJob.userId !== userId) {
       log.warn(
@@ -352,12 +382,8 @@ export class JobService {
       throw new PermissionError();
     }
 
-    if (!fetchedJob || !fetchedJob.id) {
-      throw new NotFoundError();
-    }
-
     // Update database with the run times
-    await this.jobRepo.updateRunTimes(fetchedJob.id, lastRunAt, nextRunAt);
+    await this.jobRepo.updateRunTimes(fetchedJob.id!, lastRunAt, nextRunAt);
 
     this.invalidateCache(jobId);
     return this.toResponseDTO(fetchedJob);
@@ -366,6 +392,13 @@ export class JobService {
   async runJobNow(jobId: number, userId: string, log: Logger): Promise<void> {
     const fetchedJob = await this.jobRepo.findById(jobId);
     if (!fetchedJob) {
+      log.warn(
+        {
+          jobId: jobId,
+          userId: userId,
+        },
+        "job not found",
+      );
       throw new NotFoundError();
     }
 

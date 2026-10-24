@@ -10,7 +10,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
   req.log = reqLogger.child({ requestId }) as Logger;
 
   req.log.info(
-    { method: req.method, path: req.path, query: req.query },
+    { method: req.method, path: req.url, query: req.query },
     "request started",
   );
 
@@ -18,7 +18,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
     req.log.info(
       {
         method: req.method,
-        path: req.path,
+        path: req.url,
         status: res.statusCode,
         durationMs: Date.now() - start,
       },

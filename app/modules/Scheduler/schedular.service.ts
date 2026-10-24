@@ -105,10 +105,12 @@ export class SchedularService {
         );
       }
 
-      log.debug(
-        { count: fetchedJobs.length, queryDuration: queryDuration },
-        "due jobs found",
-      );
+      if (fetchedJobs.length > 0) {
+        log.debug(
+          { count: fetchedJobs.length, queryDuration: queryDuration },
+          "due jobs found",
+        );
+      }
 
       for (const each of fetchedJobs) {
         //The next run at of each job fetched gets calculated and saved in db to avoid double queuing the next minute

@@ -43,4 +43,4 @@ app.listen(PORT, () => {
   }
 });
 
-// scheduler.findDueJobs();
+ scheduler.findDueJobs();

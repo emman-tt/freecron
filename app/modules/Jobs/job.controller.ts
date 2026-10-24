@@ -33,15 +33,17 @@ export class JobController {
           ["POST", "GET", "PATCH", "DELETE", "PUT"],
           "Invalid http command or not capitalized",
         ),
-        description: z.string().nullable(),
+        description: z.string().nullable().default(null),
         httpBody: z.record(z.string(), z.unknown()).default({}),
         httpHeader: z.record(z.string(), z.string()).default({}),
-        httpCommand: z.url(),
+        httpCommand: z.url("Invalid http command url format"),
       });
 
       const check = bodySchema.safeParse(req.body);
+
       if (!check.success) {
         const formatted = z.prettifyError(check.error);
+        console.log("formatted", formatted);
         throw new ValidationError(`${formatted}`);
       }
 
