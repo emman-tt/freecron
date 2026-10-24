@@ -86,7 +86,8 @@ export class JobRespository {
   }
 
   async delete(id: number) {
-    await db.delete(Job).where(eq(Job.id, id));
+    const [deleted] = await db.delete(Job).where(eq(Job.id, id)).returning();
+    return deleted
   }
 
   async updateRunTimes(id: number, lastRunAt: Date, nextRunAt: Date) {

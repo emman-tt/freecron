@@ -19,38 +19,49 @@ export class JobController {
 
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const bodySchema = z.object({
-        name: z
-          .string()
-          .trim()
-          .min(1, "Job name should be more than one character"),
-        cronExpression: z
-          .string()
-          .refine((value: string) => this.cronManager.validateCron(value), {
-            error: "Invalid cron format for scheduling",
-          }),
-        httpMethod: z.enum(
-          ["POST", "GET", "PATCH", "DELETE", "PUT"],
-          "Invalid http command or not capitalized",
-        ),
-        description: z.string().nullable().default(null),
-        httpBody: z.record(z.string(), z.unknown()).default({}),
-        httpHeader: z.record(z.string(), z.string()).default({}),
-        httpCommand: z.url("Invalid http command url format"),
-      });
+      const bodySchema = z
+        .object({
+          name: z
+            .string()
+            .trim()
+            .min(1, "Job name should be more than one character"),
+          cronExpression: z
+            .string()
+            .refine((value: string) => this.cronManager.validateCron(value), {
+              error: "Invalid cron format for scheduling",
+            }),
+          httpMethod: z.enum(
+            ["POST", "GET", "PATCH", "DELETE", "PUT"],
+            "Invalid http command or not capitalized",
+          ),
+          description: z.string().nullable().default(null),
+          httpBody: z.record(z.string(), z.unknown()).default({}),
+          httpHeader: z.record(z.string(), z.string()).default({}),
+          httpCommand: z.url("Invalid http command url format"),
+        })
+        .superRefine((val, ctx) => {
+          if (
+            val.httpMethod === "GET" &&
+            Object.keys(val.httpBody).length > 0
+          ) {
+            ctx.addIssue({
+              code: "custom",
+              message: "Request with GET method cannot have body",
+            });
+          }
+        });
 
       const check = bodySchema.safeParse(req.body);
 
       if (!check.success) {
         const formatted = z.prettifyError(check.error);
-        console.log("formatted", formatted);
         throw new ValidationError(`${formatted}`);
       }
 
       const data = check.data;
 
       //create a new job
-      const jobs = await this.jobService.createJob(data, req.userId, req.log);
+      const jobs = await this.jobService.create(data, req.userId, req.log);
 
       //Return resource response
       res.status(201).json({
@@ -236,7 +247,7 @@ export class JobController {
 
       const payload = bodyCheck.data;
 
-      const job = await this.jobService.updateJob(
+      const job = await this.jobService.update(
         jobId,
         payload,
         req.userId,
@@ -298,7 +309,7 @@ export class JobController {
       const { jobId } = paramsCheck.data;
 
       //Call service
-      await this.jobService.deleteJob(jobId, req.userId, req.log);
+      await this.jobService.delete(jobId, req.userId, req.log);
 
       //Return resource response
       res.status(200).json({

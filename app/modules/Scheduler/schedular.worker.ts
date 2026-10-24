@@ -171,7 +171,7 @@ export class ScheduleWorker {
             lastRunAt: new Date(),
           };
 
-          await this.jobService.updateJob(
+          await this.jobService.update(
             jobId,
             updateData,
             jobData.userId,
@@ -233,7 +233,7 @@ export class ScheduleWorker {
         lastRunAt: new Date(),
       };
 
-      await this.jobService.updateJob(jobId, updateData, jobData.userId, log);
+      await this.jobService.update(jobId, updateData, jobData.userId, log);
     } catch (error: any) {
       const httpCallDuration = Date.now() - httpCallStart;
       if (isHttpError) {
@@ -285,7 +285,7 @@ export class ScheduleWorker {
           lastRunAt: new Date(),
         };
 
-        await this.jobService.updateJob(jobId, updateData, jobData.userId, log);
+        await this.jobService.update(jobId, updateData, jobData.userId, log);
 
         //    Sends notifications to the user - Notification service needed
       } else {

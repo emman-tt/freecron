@@ -43,14 +43,11 @@ export class JobService {
     this.schedular = schedular;
   }
 
-  async createJob(
+  async create(
     data: createJobDTO,
     userId: string,
     log: Logger,
   ): Promise<jobResponseDTO> {
-  
-
-
     //Calculate system logic and defaults (next and last runs)
     const nextRunAt = this.cronManger.findNextRun(data.cronExpression);
     const lastRunAt = null;
@@ -267,7 +264,7 @@ export class JobService {
     return this.toResponseDTO(updatedJob);
   }
 
-  async deleteJob(jobId: number, userId: string, log: Logger) {
+  async delete(jobId: number, userId: string, log: Logger) {
     const fetchedJob = (await this.jobRepo.findById(jobId)) as Job;
 
     if (!fetchedJob) {
@@ -294,10 +291,11 @@ export class JobService {
 
     //invalidate every cache both for one job and all jobs
     this.invalidateCache(jobId, userId);
-    await this.jobRepo.delete(jobId);
+    const deleted = (await this.jobRepo.delete(jobId)) as Job;
+    return this.toResponseDTO(deleted);
   }
 
-  async updateJob(
+  async update(
     jobId: number,
     updateDTO: updateJobDTO,
     userId: string,
