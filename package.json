@@ -1,0 +1,64 @@
+{
+  "name": "freecron",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "tsc": "tsc",
+    "dev": "tsx watch -r dotenv/config ./app/index.ts | pnpm exec pino-pretty",
+    "prod": "tsc && node ./build/index.js",
+    "test": "NODE_OPTIONS=--experimental-vm-modules dotenv -e .env.test jest --runInBand ",
+    "test-pino": "NODE_OPTIONS=--experimental-vm-modules dotenv -e .env.test jest --runInBand | pnpm exec pino-pretty"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.9.0",
+      "onFail": "download"
+    }
+  },
+  "pnpm": {
+    "ignoredBuiltDependencies": [
+      "@parcel/watcher"
+    ]
+  },
+  "type": "module",
+  "dependencies": {
+    "@slack/web-api": "^8.2.0",
+    "@types/express": "^5.0.6",
+    "better-auth": "^1.7.7",
+    "bullmq": "^6.2.0",
+    "cron-parser": "^5.10.0",
+    "dev": "^0.1.5",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "1.0.0-rc.4",
+    "drizzle-seed": "^0.3.1",
+    "express": "^5.2.1",
+    "ioredis": "^6.0.0",
+    "node-cron": "^4.6.0",
+    "pino": "^10.4.0",
+    "postgres": "^3.4.9",
+    "resend": "^6.32.1",
+    "uuid": "^14.0.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.5.0",
+    "@types/ioredis": "^5.0.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^26.2.0",
+    "@types/supertest": "^7.2.1",
+    "dotenv-cli": "^11.0.0",
+    "drizzle-kit": "1.0.0-rc.4",
+    "jest": "^30.4.2",
+    "jest-fetch-mock": "^4.2.0",
+    "pino-pretty": "^13.2.0",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.12",
+    "tsx": "^4.23.12",
+    "typescript": "^6.0.3"
+  }
+}

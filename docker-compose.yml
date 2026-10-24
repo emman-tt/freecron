@@ -1,0 +1,46 @@
+services:
+  prod-redis:
+    container_name: freecron-prod-redis
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-prod-data:/data
+
+  test-redis:
+    image: redis:alpine
+    container_name: freecron-test-redis
+    ports:
+      - "6378:6379"
+    volumes:
+      - redis-test-data:/data
+
+  test-database:
+    image: postgres:16
+    container_name: freecron-test-db
+    environment:
+      - POSTGRES_USER=${DB_HOST}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - pg-test-data:/var/lib/postgresql/data
+    ports:
+      - "5431:5432"
+
+  prod-database:
+    image: postgres:16
+    container_name: freecron-prod-db
+    environment:
+      - POSTGRES_USER=${DB_HOST}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - pg-prod-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  redis-test-data:
+  redis-prod-data:
+  pg-prod-data:
+  pg-test-data:
