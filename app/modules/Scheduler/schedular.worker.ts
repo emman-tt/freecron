@@ -51,7 +51,7 @@ export class ScheduleWorker {
         userId: userId,
       });
       if (jobData.executionId == null) {
-        log.error({ jobId, filename: "schedular.worker.ts", functionname: "(anonymous)" }, "missing executionId, skipping notify");
+        log.error({ jobId, filename: "schedular.worker.ts", functionname: "ScheduleWorker.on-completed" }, "missing executionId, skipping notify");
         return;
       }
       this.notif.notify(jobId, jobData.executionId, "success", userId, log);
@@ -67,7 +67,7 @@ export class ScheduleWorker {
         userId: userId,
       });
       if (jobData.executionId == null) {
-        log.error({ jobId, filename: "schedular.worker.ts", functionname: "(anonymous)" }, "missing executionId, skipping notify");
+        log.error({ jobId, filename: "schedular.worker.ts", functionname: "ScheduleWorker.on-failed" }, "missing executionId, skipping notify");
         return;
       }
       this.notif.notify(jobId, jobData.executionId, "failure", userId, log);

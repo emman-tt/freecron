@@ -62,7 +62,7 @@ describe("Scheduler Service", () => {
     expect(queue.add).toHaveBeenCalledWith(queueParams);
     expect(mockLog.info).toHaveBeenCalledWith(
       expect.objectContaining({ jobId: 8, delayMs: 30000 }),
-      "job scheduled with delay",
+      "job scheduled",
     );
   });
 

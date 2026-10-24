@@ -107,7 +107,7 @@ export class SchedularService {
             count: fetchedJobs.length,
             queryDuration: queryDuration,
             filename: "schedular.service.ts",
-            functionname: "(anonymous)",
+            functionname: "findDueJobs.tick",
           },
           "due jobs query is slow",
         );
@@ -119,7 +119,7 @@ export class SchedularService {
             count: fetchedJobs.length,
             queryDuration: queryDuration,
             filename: "schedular.service.ts",
-            functionname: "(anonymous)",
+            functionname: "findDueJobs.tick",
           },
           "due jobs found",
         );

@@ -63,7 +63,7 @@ describe("Job Controller", () => {
     runJobNow:
       jest.fn<(jobId: number, userId: string, log: Logger) => Promise<void>>(),
     delete:
-      jest.fn<(jobId: number, userId: string, log: Logger) => Promise<void>>(),
+      jest.fn<(jobId: number, userId: string, log: Logger) => Promise<boolean>>(),
   };
 
   const mockLog = {
@@ -406,9 +406,9 @@ describe("Job Controller", () => {
     expect(res.json).toHaveBeenCalledWith({ status: "success", data: true });
   });
 
-  it("should delete a job and return true", async () => {
+  it("should delete a job and return the service result", async () => {
     //Arrange
-    jobService.delete.mockResolvedValue(undefined);
+    jobService.delete.mockResolvedValue(true);
     const req = mockReq({ params: { jobId: "5" } });
     const res = mockRes();
     const next = mockNext();

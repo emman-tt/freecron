@@ -22,7 +22,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
         status: res.statusCode,
         durationMs: Date.now() - start,
         filename: "logger.ts",
-        functionname: "(anonymous)",
+        functionname: "requestLogger.finish",
       },
       "request finished",
     );
