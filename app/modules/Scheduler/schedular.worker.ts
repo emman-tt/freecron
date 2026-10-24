@@ -51,7 +51,7 @@ export class ScheduleWorker {
         userId: userId,
       });
       if (jobData.executionId == null) {
-        log.error({ jobId }, "missing executionId, skipping notify");
+        log.error({ jobId, filename: "schedular.worker.ts", functionname: "(anonymous)" }, "missing executionId, skipping notify");
         return;
       }
       this.notif.notify(jobId, jobData.executionId, "success", userId, log);
@@ -67,7 +67,7 @@ export class ScheduleWorker {
         userId: userId,
       });
       if (jobData.executionId == null) {
-        log.error({ jobId }, "missing executionId, skipping notify");
+        log.error({ jobId, filename: "schedular.worker.ts", functionname: "(anonymous)" }, "missing executionId, skipping notify");
         return;
       }
       this.notif.notify(jobId, jobData.executionId, "failure", userId, log);
@@ -85,7 +85,7 @@ export class ScheduleWorker {
       userId: jobData.userId,
     });
 
-    log.info("Job started");
+    log.info({ filename: "schedular.worker.ts", functionname: "ScheduleWorker.Processor" }, "Job started");
 
     //Create execution if missing (covers first attempt + retry after crash between create/updateData)
     if (!jobData.executionId) {
@@ -116,6 +116,8 @@ export class ScheduleWorker {
           executionId: job.data.executionId,
           attempts: job.opts.attempts,
           attemptsStarted: job.attemptsStarted,
+          filename: "schedular.worker.ts",
+          functionname: "ScheduleWorker.Processor",
         },
         "http command started",
       );
@@ -154,6 +156,8 @@ export class ScheduleWorker {
               attemptsStarted: job.attemptsStarted,
               attempts: job.opts.attempts,
               error: errorMessage,
+              filename: "schedular.worker.ts",
+              functionname: "ScheduleWorker.Processor",
             },
             "http command failed permanently",
           );
@@ -191,6 +195,8 @@ export class ScheduleWorker {
               attemptsStarted: job.attemptsStarted,
               attempts: job.opts.attempts,
               error: errorMessage,
+              filename: "schedular.worker.ts",
+              functionname: "ScheduleWorker.Processor",
             },
             "http command failed",
           );
@@ -213,6 +219,8 @@ export class ScheduleWorker {
           durationMs: httpCallDuration,
           attempts: job.opts.attempts,
           attemptsStarted: job.attemptsStarted,
+          filename: "schedular.worker.ts",
+          functionname: "ScheduleWorker.Processor",
         },
         "http command successful",
       );
@@ -265,6 +273,8 @@ export class ScheduleWorker {
             attemptsStarted: job.attemptsStarted,
             attempts: job.opts.attempts,
             error: errorMessage,
+            filename: "schedular.worker.ts",
+            functionname: "ScheduleWorker.Processor",
           },
           "http command failed permanently",
         );
@@ -302,6 +312,8 @@ export class ScheduleWorker {
             attemptsStarted: job.attemptsStarted,
             attempts: job.opts.attempts,
             error: errorMessage,
+            filename: "schedular.worker.ts",
+            functionname: "ScheduleWorker.Processor",
           },
           "http command failed",
         );

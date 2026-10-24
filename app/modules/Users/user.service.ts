@@ -15,7 +15,7 @@ export class UserService {
     const fetched = (await this.userRepo.findById(userId)) as UserEntity;
 
     if (!fetched) {
-      log.warn({ userId }, "user not found");
+      log.warn({ userId, filename: "user.service.ts", functionname: "UserService.find" }, "user not found");
       throw new NotFoundError();
     }
 
@@ -30,18 +30,18 @@ export class UserService {
     const fetched = (await this.userRepo.findById(userId)) as UserEntity;
 
     if (!fetched) {
-      log.warn({ userId }, "user not found");
+      log.warn({ userId, filename: "user.service.ts", functionname: "UserService.update" }, "user not found");
       throw new NotFoundError();
     }
 
     const [updated] = await this.userRepo.update(userId, updateDTO);
 
     if (!updated) {
-      log.warn({ userId }, "user not found");
+      log.warn({ userId, filename: "user.service.ts", functionname: "UserService.update" }, "user not found");
       throw new NotFoundError();
     }
 
-    log.info({ userId }, "user updated");
+    log.info({ userId, filename: "user.service.ts", functionname: "UserService.update" }, "user updated");
 
     return this.toResponseDTO(updated);
   }
@@ -50,13 +50,13 @@ export class UserService {
     const fetched = (await this.userRepo.findById(userId)) as UserEntity;
 
     if (!fetched) {
-      log.warn({ userId }, "user not found");
+      log.warn({ userId, filename: "user.service.ts", functionname: "UserService.delete" }, "user not found");
       throw new NotFoundError();
     }
 
     await this.userRepo.delete(userId);
 
-    log.info({ userId }, "user account deleted");
+    log.info({ userId, filename: "user.service.ts", functionname: "UserService.delete" }, "user account deleted");
 
     return this.toResponseDTO(fetched);
   }

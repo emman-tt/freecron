@@ -18,17 +18,19 @@ export async function authMiddleware(
     }
 
     req.userId = session.user.id;
-    req.log.debug({ userId: req.userId }, "user session attached");
+    req.log.debug({ userId: req.userId, filename: "auth.ts", functionname: "authMiddleware" }, "user session attached");
     next();
   } catch (error) {
     if (error instanceof UnauthenticatedError) {
-      req.log.warn({ path: req.path }, "unauthenticated request");
+      req.log.warn({ path: req.path, filename: "auth.ts", functionname: "authMiddleware" }, "unauthenticated request");
       return next(error);
     }
     req.log.error(
       {
         path: req.path,
         error: error instanceof Error ? error.message : String(error),
+        filename: "auth.ts",
+        functionname: "authMiddleware",
       },
       "session lookup failed",
     );

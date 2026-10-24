@@ -59,7 +59,7 @@ export class NotificationService {
 
     if (!notifications.length) {
       log.warn(
-        { jobId, executionId, event, userId },
+        { jobId, executionId, event, userId, filename: "notification.service.ts", functionname: "NotificationService.notify" },
         "no notifications to send",
       );
       return;
@@ -73,6 +73,8 @@ export class NotificationService {
             jobId,
             executionId,
             event,
+            filename: "notification.service.ts",
+            functionname: "NotificationService.notify",
           },
           "notification not enabled, skipping",
         );
@@ -93,6 +95,8 @@ export class NotificationService {
           jobId,
           executionId,
           event,
+          filename: "notification.service.ts",
+          functionname: "NotificationService.notify",
         },
         "notification queued",
       );
@@ -107,7 +111,7 @@ export class NotificationService {
   ): Promise<notificationResponseDTO> {
     const job = await this.jobService.findJobSystem(jobId, log);
     if (job.userId !== userId) {
-      log.warn({ jobId, userId }, "job doesn't belong to user");
+      log.warn({ jobId, userId, filename: "notification.service.ts", functionname: "NotificationService.create" }, "job doesn't belong to user");
       throw new PermissionError();
     }
 
@@ -121,6 +125,8 @@ export class NotificationService {
         notificationId: created.id,
         jobId: jobId,
         type: created.type,
+        filename: "notification.service.ts",
+        functionname: "NotificationService.create",
       },
       "notification created",
     );
@@ -146,13 +152,13 @@ export class NotificationService {
     )) as NotificationEntity;
 
     if (!fetched) {
-      log.warn({ notificationId }, "notification not found");
+      log.warn({ notificationId, filename: "notification.service.ts", functionname: "NotificationService.findOne" }, "notification not found");
       throw new NotFoundError();
     }
 
     const job = await this.jobService.findJobSystem(fetched.jobId, log);
     if (job.userId !== userId) {
-      log.warn({ jobId: fetched.jobId, userId }, "job doesn't belong to user");
+      log.warn({ jobId: fetched.jobId, userId, filename: "notification.service.ts", functionname: "NotificationService.findOne" }, "job doesn't belong to user");
       throw new PermissionError();
     }
 
@@ -170,7 +176,7 @@ export class NotificationService {
     )) as NotificationEntity;
 
     if (!fetched) {
-      log.error({ notificationId }, "notification not found by system");
+      log.error({ notificationId, filename: "notification.service.ts", functionname: "NotificationService.findOneSystem" }, "notification not found by system");
       throw new UnrecoverableError();
     }
 
@@ -186,7 +192,7 @@ export class NotificationService {
     // Ownership first — the list must never leak across users
     const job = await this.jobService.findJobSystem(jobId, log);
     if (job.userId !== userId) {
-      log.warn({ jobId, userId }, "job doesn't belong to user");
+      log.warn({ jobId, userId, filename: "notification.service.ts", functionname: "NotificationService.findAllByJob" }, "job doesn't belong to user");
       throw new PermissionError();
     }
 
@@ -213,20 +219,20 @@ export class NotificationService {
     )) as NotificationEntity;
 
     if (!fetched) {
-      log.warn({ notificationId }, "notification not found");
+      log.warn({ notificationId, filename: "notification.service.ts", functionname: "NotificationService.toggleEnabled" }, "notification not found");
       throw new NotFoundError();
     }
 
     const job = await this.jobService.findJobSystem(fetched.jobId, log);
     if (job.userId !== userId) {
-      log.warn({ jobId: fetched.jobId, userId }, "job doesn't belong to user");
+      log.warn({ jobId: fetched.jobId, userId, filename: "notification.service.ts", functionname: "NotificationService.toggleEnabled" }, "job doesn't belong to user");
       throw new PermissionError();
     }
 
     const updated = await this.notificationRepo.toggleEnabled(notificationId);
 
     if (!updated) {
-      log.warn({ notificationId }, "notification not found");
+      log.warn({ notificationId, filename: "notification.service.ts", functionname: "NotificationService.toggleEnabled" }, "notification not found");
       throw new NotFoundError();
     }
 
@@ -246,13 +252,13 @@ export class NotificationService {
     )) as NotificationEntity;
 
     if (!fetched) {
-      log.warn({ notificationId }, "notification not found");
+      log.warn({ notificationId, filename: "notification.service.ts", functionname: "NotificationService.update" }, "notification not found");
       throw new NotFoundError();
     }
 
     const job = await this.jobService.findJobSystem(fetched.jobId, log);
     if (job.userId !== userId) {
-      log.warn({ jobId: fetched.jobId, userId }, "job doesn't belong to user");
+      log.warn({ jobId: fetched.jobId, userId, filename: "notification.service.ts", functionname: "NotificationService.update" }, "job doesn't belong to user");
       throw new PermissionError();
     }
 
@@ -262,7 +268,7 @@ export class NotificationService {
     );
 
     if (!updated) {
-      log.warn({ notificationId }, "notification not found");
+      log.warn({ notificationId, filename: "notification.service.ts", functionname: "NotificationService.update" }, "notification not found");
       throw new NotFoundError();
     }
 
@@ -275,13 +281,13 @@ export class NotificationService {
     const fetched = await this.notificationRepo.findById(notificationId);
 
     if (!fetched) {
-      log.warn({ notificationId }, "notification not found");
+      log.warn({ notificationId, filename: "notification.service.ts", functionname: "NotificationService.delete" }, "notification not found");
       throw new NotFoundError();
     }
 
     const job = await this.jobService.findJobSystem(fetched.jobId, log);
     if (job.userId !== userId) {
-      log.warn({ jobId: fetched.jobId, userId }, "job doesn't belong to user");
+      log.warn({ jobId: fetched.jobId, userId, filename: "notification.service.ts", functionname: "NotificationService.delete" }, "job doesn't belong to user");
       throw new PermissionError();
     }
 

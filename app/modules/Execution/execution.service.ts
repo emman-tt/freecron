@@ -42,6 +42,8 @@ export class ExecutionService {
       {
         executionId: execution?.id,
         status: execution?.status,
+        filename: "execution.service.ts",
+        functionname: "ExecutionService.create",
       },
       "execution created",
     );
@@ -63,6 +65,8 @@ export class ExecutionService {
       log.error(
         {
           executionId: executionId,
+          filename: "execution.service.ts",
+          functionname: "ExecutionService.complete",
         },
         "execution not found by system",
       );
@@ -85,6 +89,8 @@ export class ExecutionService {
       {
         executionId: execution.id,
         duration: duration,
+        filename: "execution.service.ts",
+        functionname: "ExecutionService.complete",
       },
       "execution completed",
     );
@@ -106,6 +112,8 @@ export class ExecutionService {
       log.error(
         {
           executionId: executionId,
+          filename: "execution.service.ts",
+          functionname: "ExecutionService.fail",
         },
         "execution not found by system",
       );
@@ -130,6 +138,8 @@ export class ExecutionService {
         executionId: execution.id,
         duration: updated?.duration,
         error: error,
+        filename: "execution.service.ts",
+        functionname: "ExecutionService.fail",
       },
       "execution failed",
     );
@@ -140,7 +150,7 @@ export class ExecutionService {
   async findOneSystem(executionId: number, log: Logger): Promise<ExecutionType> {
     const execution = await this.executionRepo.findById(executionId);
     if (!execution) {
-      log.error({ executionId }, "execution not found by system");
+      log.error({ executionId, filename: "execution.service.ts", functionname: "ExecutionService.findOneSystem" }, "execution not found by system");
       throw new UnrecoverableError("execution not found");
     }
     return execution as ExecutionType;

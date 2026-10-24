@@ -68,7 +68,7 @@ export class NotificationWorker {
     });
 
     if (typeof executionId !== "number") {
-      log.error({ notificationId }, "missing executionId in queue payload");
+      log.error({ notificationId, filename: "notification.worker.ts", functionname: "NotificationWorker.Processor" }, "missing executionId in queue payload");
       throw new UnrecoverableError("missing executionId");
     }
 
@@ -124,7 +124,7 @@ export class NotificationWorker {
           channel: notication.channelId!,
         });
         log.info(
-          { channel: notication.channelId, ts: (data as { ts?: string }).ts },
+          { channel: notication.channelId, ts: (data as { ts?: string }).ts, filename: "notification.worker.ts", functionname: "NotificationWorker.SlackProcessor" },
           "slack message posted",
         );
         return;
@@ -155,7 +155,7 @@ export class NotificationWorker {
         });
 
         log.info(
-          { channel: notication.channelId, ts: (data as { ts?: string }).ts },
+          { channel: notication.channelId, ts: (data as { ts?: string }).ts, filename: "notification.worker.ts", functionname: "NotificationWorker.SlackProcessor" },
           "slack message posted",
         );
         return;
@@ -165,6 +165,8 @@ export class NotificationWorker {
         {
           channel: notication.channelId,
           err: error instanceof Error ? error.message : String(error),
+          filename: "notification.worker.ts",
+          functionname: "NotificationWorker.SlackProcessor",
         },
         "slack delivery failed",
       );
@@ -205,6 +207,8 @@ export class NotificationWorker {
           {
             target: notication.target,
             err: sent.error.message ?? String(sent.error),
+            filename: "notification.worker.ts",
+            functionname: "NotificationWorker.EmailProcessor",
           },
           "email rejected by resend",
         );
@@ -214,6 +218,8 @@ export class NotificationWorker {
         {
           target: notication.target,
           messageId: sent.data?.id,
+          filename: "notification.worker.ts",
+          functionname: "NotificationWorker.EmailProcessor",
         },
         "email delivered",
       );
@@ -249,6 +255,8 @@ export class NotificationWorker {
           {
             target: notication.target,
             err: sent.error.message ?? String(sent.error),
+            filename: "notification.worker.ts",
+            functionname: "NotificationWorker.EmailProcessor",
           },
           "email rejected by resend",
         );
@@ -258,6 +266,8 @@ export class NotificationWorker {
         {
           target: notication.target,
           messageId: sent.data?.id,
+          filename: "notification.worker.ts",
+          functionname: "NotificationWorker.EmailProcessor",
         },
         "email delivered",
       );

@@ -68,6 +68,8 @@ export class JobService {
         isActive: createdJob.isActive,
         maxRetries: createdJob.maxRetries,
         httpCommand: createdJob.httpCommand,
+        filename: "job.service.ts",
+        functionname: "JobService.create",
       },
       "job created",
     );
@@ -104,6 +106,8 @@ export class JobService {
         {
           jobId: jobId,
           userId: userId,
+          filename: "job.service.ts",
+          functionname: "JobService.findJobUser",
         },
         "job not found for user",
       );
@@ -116,6 +120,8 @@ export class JobService {
         {
           jobId: jobId,
           userId: userId,
+          filename: "job.service.ts",
+          functionname: "JobService.findJobUser",
         },
         "job doesn't belong to user",
       );
@@ -135,6 +141,8 @@ export class JobService {
       log.error(
         {
           jobId: jobId,
+          filename: "job.service.ts",
+          functionname: "JobService.findJobSystem",
         },
         "job not found for system",
       );
@@ -151,6 +159,8 @@ export class JobService {
       log.error(
         {
           jobId: jobId,
+          filename: "job.service.ts",
+          functionname: "JobService.findJobAndUser",
         },
         "job not found for system",
       );
@@ -216,6 +226,8 @@ export class JobService {
         {
           jobId: jobId,
           userId: userId,
+          filename: "job.service.ts",
+          functionname: "JobService.toggleActive",
         },
         "job not found",
       );
@@ -228,6 +240,8 @@ export class JobService {
         {
           jobId: jobId,
           userId: userId,
+          filename: "job.service.ts",
+          functionname: "JobService.toggleActive",
         },
         "job doesn't belong to user",
       );
@@ -242,6 +256,8 @@ export class JobService {
         {
           jobId: jobId,
           userId: userId,
+          filename: "job.service.ts",
+          functionname: "JobService.toggleActive",
         },
         "job not found",
       );
@@ -272,6 +288,8 @@ export class JobService {
         {
           jobId: jobId,
           userId: userId,
+          filename: "job.service.ts",
+          functionname: "JobService.delete",
         },
         "job not found",
       );
@@ -283,6 +301,8 @@ export class JobService {
         {
           jobId: jobId,
           userId: userId,
+          filename: "job.service.ts",
+          functionname: "JobService.delete",
         },
         "job doesn't belong to user",
       );
@@ -308,6 +328,8 @@ export class JobService {
         {
           jobId: jobId,
           userId: userId,
+          filename: "job.service.ts",
+          functionname: "JobService.update",
         },
         "job not found",
       );
@@ -319,6 +341,8 @@ export class JobService {
         {
           jobId: jobId,
           userId: userId,
+          filename: "job.service.ts",
+          functionname: "JobService.update",
         },
         "job doesn't belong to user",
       );
@@ -358,6 +382,8 @@ export class JobService {
         {
           jobId: jobId,
           userId: userId,
+          filename: "job.service.ts",
+          functionname: "JobService.updateRunTimes",
         },
         "job not found",
       );
@@ -369,6 +395,8 @@ export class JobService {
         {
           jobId: jobId,
           userId: userId,
+          filename: "job.service.ts",
+          functionname: "JobService.updateRunTimes",
         },
         "job doesn't belong to user",
       );
@@ -389,6 +417,8 @@ export class JobService {
         {
           jobId: jobId,
           userId: userId,
+          filename: "job.service.ts",
+          functionname: "JobService.runJobNow",
         },
         "job not found",
       );
@@ -401,6 +431,8 @@ export class JobService {
         {
           jobId: jobId,
           userId: userId,
+          filename: "job.service.ts",
+          functionname: "JobService.runJobNow",
         },
         "job doesn't belong to user",
       );

@@ -41,6 +41,8 @@ export class SchedularService {
         queueId: id,
         delayMs: delay,
         priority: 10,
+        filename: "schedular.service.ts",
+        functionname: "SchedularService.scheduleJob",
       },
       "job scheduled",
     );
@@ -55,6 +57,8 @@ export class SchedularService {
       {
         jobId: jobId,
         queueId: id,
+        filename: "schedular.service.ts",
+        functionname: "SchedularService.unscheduleJob",
       },
       "job unscheduled",
     );
@@ -79,6 +83,8 @@ export class SchedularService {
         queueId: id,
         priority: 1,
         delay: 0,
+        filename: "schedular.service.ts",
+        functionname: "SchedularService.runJobNow",
       },
       "job scheduled and run now",
     );
@@ -100,6 +106,8 @@ export class SchedularService {
           {
             count: fetchedJobs.length,
             queryDuration: queryDuration,
+            filename: "schedular.service.ts",
+            functionname: "(anonymous)",
           },
           "due jobs query is slow",
         );
@@ -107,7 +115,12 @@ export class SchedularService {
 
       if (fetchedJobs.length > 0) {
         log.debug(
-          { count: fetchedJobs.length, queryDuration: queryDuration },
+          {
+            count: fetchedJobs.length,
+            queryDuration: queryDuration,
+            filename: "schedular.service.ts",
+            functionname: "(anonymous)",
+          },
           "due jobs found",
         );
       }
