@@ -18,7 +18,7 @@ import { requestLogger } from "./shared/middleware/logger.js";
 import { authMiddleware } from "./shared/middleware/auth.js";
 
 const PORT = process.env.PORT;
-const app = express();
+export const app: express.Express = express();
 
 app.all("/api/auth/{*any}", requestLogger, toNodeHandler(auth));
 app.use(express.json());
@@ -35,12 +35,12 @@ app.use("/api/users", requestLogger, authMiddleware, UserRouter);
 
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  try {
-    console.log(`Connected to the server on port ${PORT}`);
-  } catch (error) {
-    //Log server  binding error and config errors here
-  }
-});
+// app.listen(PORT, () => {
+//   try {
+//     console.log(`Connected to the server on port ${PORT}`);
+//   } catch (error) {
+//     //Log server  binding error and config errors here
+//   }
+// });
 
- scheduler.findDueJobs();
+scheduler.findDueJobs();
