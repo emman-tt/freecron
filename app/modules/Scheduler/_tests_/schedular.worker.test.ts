@@ -75,13 +75,15 @@ describe("Worker integration test", () => {
 
   beforeEach(async () => {
     await CleanTestInfra();
+    //Give the wrappers a connection they own (close() quits it) so the
+    //shared test redis stays usable for fixtures and teardown
     queueEvents = new QueueEvents("schedular", { connection: redis });
     cacheRepo = new SharedCacheRepository(redis);
-    scheduleQueue = new ScheduleQueue(redis);
+    scheduleQueue = new ScheduleQueue(redis.duplicate());
     schedular = new SchedularService(scheduleQueue, cronManager, jobRepo);
     jobService = new JobService(jobRepo, cronManager, cacheRepo, schedular);
     executionService = new ExecutionService(executionRepo, jobService);
-    notifQueue = new NotificationQueue(redis);
+    notifQueue = new NotificationQueue(redis.duplicate());
     notificationService = new NotificationService(
       notificationRepo,
       jobService,
@@ -89,7 +91,7 @@ describe("Worker integration test", () => {
       notifQueue,
     );
     worker = new ScheduleWorker(
-      redis,
+      redis.duplicate(),
       jobService,
       executionService,
       notificationService,

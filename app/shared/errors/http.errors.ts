@@ -8,7 +8,6 @@ export function errorHandler(
   next: NextFunction,
 ): void {
   if (err instanceof DomainError) {
-
     res.status(err.statusCode).json({
       status: "fail",
       error: err.name,

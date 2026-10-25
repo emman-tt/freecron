@@ -1,5 +1,6 @@
 import {
   afterAll,
+  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -15,7 +16,6 @@ import {
 import { ScheduleQueue } from "../schedular.queue.js";
 
 import type { queueDTO } from "../schedular.types.js";
-import { afterEach } from "node:test";
 describe("Schdular queue integration tests", () => {
   let queue: ScheduleQueue;
   beforeAll(async () => {
@@ -23,7 +23,8 @@ describe("Schdular queue integration tests", () => {
   });
   beforeEach(async () => {
     await CleanTestInfra();
-    queue = new ScheduleQueue(redis);
+    //Duplicate so close() quitting it never touches the shared test redis
+    queue = new ScheduleQueue(redis.duplicate());
   });
 
   afterEach(async () => {

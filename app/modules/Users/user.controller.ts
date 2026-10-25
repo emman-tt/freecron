@@ -21,6 +21,7 @@ export class UserController {
       next(error);
     }
   }
+  
 
   async update(req: Request, res: Response, next: NextFunction) {
     try {
