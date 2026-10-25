@@ -15,6 +15,7 @@ import { errorHandler } from "./shared/errors/http.errors.js";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./shared/lib/auth.service.js";
 import { requestLogger } from "./shared/middleware/logger.js";
+import { reqLogger } from "./shared/lib/logger.service.js";
 import { authMiddleware } from "./shared/middleware/auth.js";
 
 const PORT = process.env.PORT;
@@ -35,12 +36,20 @@ app.use("/api/users", requestLogger, authMiddleware, UserRouter);
 
 app.use(errorHandler);
 
-// app.listen(PORT, () => {
-//   try {
-//     console.log(`Connected to the server on port ${PORT}`);
-//   } catch (error) {
-//     //Log server  binding error and config errors here
-//   }
-// });
+//Supertest attaches its own ephemeral server in tests — binding PORT here
+//would leave a handle jest cannot exit from
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () => {
+    reqLogger.info(
+      {
+        port: PORT,
+        filename: "index.ts",
+        functionname: "(anonymous)",
+      },
+      "server bound to port",
+    );
+  });
 
-scheduler.findDueJobs();
+  //Watchman sweeps for due jobs
+  scheduler.findDueJobs();
+}

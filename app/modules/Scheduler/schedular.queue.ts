@@ -5,8 +5,10 @@ import type { queueDTO } from "./schedular.types.js";
 
 export class ScheduleQueue {
   private queue;
+  private connection: Redis;
 
   constructor(connection: Redis) {
+    this.connection = connection;
     this.queue = new Queue("schedular", {
       connection,
     });
@@ -53,5 +55,9 @@ export class ScheduleQueue {
 
   async close() {
     await this.queue.close();
+    //BullMQ does not quit connections passed to it by the caller
+    if (this.connection.status !== "end") {
+      await this.connection.quit();
+    }
   }
 }

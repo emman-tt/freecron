@@ -24,4 +24,8 @@ export class SharedCacheRepository {
   async delete(key: string): Promise<void> {
     await this.redis.del(key);
   }
+
+  async close(): Promise<void> {
+    await this.redis.quit();
+  }
 }

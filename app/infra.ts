@@ -58,3 +58,13 @@ export {
   notificationController,
   userController,
 };
+
+//Closes every connection handle this module opened — used for clean
+//shutdown and jest teardown so the process can exit without forceExit
+export async function closeInfra() {
+  scheduler.closeWatchman();
+  await worker.close();
+  await scheduleQueue.close();
+  await NotifQueue.close();
+  await cacheRepo.close();
+}

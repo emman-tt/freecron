@@ -17,8 +17,16 @@ export function errorHandler(
     return;
   }
 
-  //Logger needed here
-  console.error("Unhandled System Error:", err);
+  //Unhandled system error — domain errors returned above never reach this
+  req.log.error(
+    {
+      err: err.message,
+      path: req.path,
+      filename: "http.errors.ts",
+      functionname: "errorHandler",
+    },
+    "unhandled system error",
+  );
   res.status(500).json({
     status: "error",
     message: "Something went wrong on the server",

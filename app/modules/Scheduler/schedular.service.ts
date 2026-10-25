@@ -1,6 +1,6 @@
 import type { ScheduleQueue } from "./schedular.queue.js";
 import type { queueDTO } from "./schedular.types.js";
-import cron from "node-cron";
+import cron, { type ScheduledTask } from "node-cron";
 import type { CronService } from "../../shared/lib/cron.service.js";
 import { JobRespository } from "../Jobs/job.repository.js";
 import type { Logger } from "pino";
@@ -12,6 +12,7 @@ export class SchedularService {
   private queue: ScheduleQueue;
   private cronManager: CronService;
   private jobRepo: JobRespository;
+  private watchman?: ScheduledTask | undefined;
   constructor(
     queue: ScheduleQueue,
     cronManager: CronService,
@@ -91,7 +92,7 @@ export class SchedularService {
   }
 
   async findDueJobs() {
-    cron.schedule("* * * * * *", async () => {
+    this.watchman = cron.schedule("* * * * * *", async () => {
       //Logger base
       const log = watchManLogger;
 
@@ -135,5 +136,11 @@ export class SchedularService {
         this.scheduleJob(each.id, each.userId, 0, log);
       }
     });
+  }
+
+  closeWatchman() {
+    this.watchman?.stop();
+    this.watchman?.destroy();
+    this.watchman = undefined;
   }
 }

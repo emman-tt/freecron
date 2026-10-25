@@ -135,6 +135,8 @@ describe("Worker integration test", () => {
       ).resolves.toBeDefined();
 
       const [record] = await executionRepo.findAllByJobId(job!.id, 20, 0);
+
+  
       const [updatedJob] = await db
         .select()
         .from(Job)
@@ -330,10 +332,13 @@ describe("Worker integration test", () => {
         },
         () => {
           attempt += 1;
-          return new Response(JSON.stringify({ success: true, data: "recovered" }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({ success: true, data: "recovered" }),
+            {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            },
+          );
         },
       );
 

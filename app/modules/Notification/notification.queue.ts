@@ -4,8 +4,10 @@ import type { queueDTO } from "./notification.types.js";
 
 export class NotificationQueue {
   private queue;
+  private connection: Redis;
 
   constructor(connection: Redis) {
+    this.connection = connection;
     this.queue = new Queue("notification", {
       connection,
     });
@@ -40,5 +42,9 @@ export class NotificationQueue {
 
   async close() {
     await this.queue.close();
+    //BullMQ does not quit connections passed to it by the caller
+    if (this.connection.status !== "end") {
+      await this.connection.quit();
+    }
   }
 }

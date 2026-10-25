@@ -8,6 +8,7 @@ import { workerLogger as logger } from "../../shared/lib/logger.service.js";
 import { NotificationService } from "../Notification/notification.service.js";
 export class ScheduleWorker {
   private worker: Worker;
+  private connection: Redis;
   private jobService: JobService;
   private executionService: ExecutionService;
   private notif: NotificationService;
@@ -17,6 +18,7 @@ export class ScheduleWorker {
     executionService: ExecutionService,
     notif: NotificationService,
   ) {
+    this.connection = connection;
     this.jobService = jobService;
     this.notif = notif;
     this.executionService = executionService;
@@ -38,6 +40,10 @@ export class ScheduleWorker {
 
   async close() {
     await this.worker.close();
+    //BullMQ does not quit connections passed to it by the caller
+    if (this.connection.status !== "end") {
+      await this.connection.quit();
+    }
   }
 
   registerEventListeners() {
@@ -51,7 +57,14 @@ export class ScheduleWorker {
         userId: userId,
       });
       if (jobData.executionId == null) {
-        log.error({ jobId, filename: "schedular.worker.ts", functionname: "ScheduleWorker.on-completed" }, "missing executionId, skipping notify");
+        log.error(
+          {
+            jobId,
+            filename: "schedular.worker.ts",
+            functionname: "ScheduleWorker.on-completed",
+          },
+          "missing executionId, skipping notify",
+        );
         return;
       }
       this.notif.notify(jobId, jobData.executionId, "success", userId, log);
@@ -67,7 +80,14 @@ export class ScheduleWorker {
         userId: userId,
       });
       if (jobData.executionId == null) {
-        log.error({ jobId, filename: "schedular.worker.ts", functionname: "ScheduleWorker.on-failed" }, "missing executionId, skipping notify");
+        log.error(
+          {
+            jobId,
+            filename: "schedular.worker.ts",
+            functionname: "ScheduleWorker.on-failed",
+          },
+          "missing executionId, skipping notify",
+        );
         return;
       }
       this.notif.notify(jobId, jobData.executionId, "failure", userId, log);
@@ -85,7 +105,13 @@ export class ScheduleWorker {
       userId: jobData.userId,
     });
 
-    log.info({ filename: "schedular.worker.ts", functionname: "ScheduleWorker.Processor" }, "Job started");
+    log.info(
+      {
+        filename: "schedular.worker.ts",
+        functionname: "ScheduleWorker.Processor",
+      },
+      "Job started",
+    );
 
     //Create execution if missing (covers first attempt + retry after crash between create/updateData)
     if (!jobData.executionId) {
