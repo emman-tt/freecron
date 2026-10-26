@@ -79,6 +79,26 @@ export class ScheduleWorker {
         jobId: jobId,
         userId: userId,
       });
+
+      //Same terminal test as the Processor's catch: intermediate attempts are
+      //re-enqueued by bull, so the failure notification is armed only when
+      //the attempt budget is exhausted
+      const maxAttempts = job?.opts.attempts;
+      const isLastAttempt =
+        job !== undefined && job.attemptsStarted >= (maxAttempts ?? 1);
+      if (!isLastAttempt) {
+        log.warn(
+          {
+            attemptsStarted: job?.attemptsStarted,
+            attempts: maxAttempts,
+            filename: "schedular.worker.ts",
+            functionname: "ScheduleWorker.on-failed",
+          },
+          "intermediate failure, skipping notify",
+        );
+        return;
+      }
+
       if (jobData.executionId == null) {
         log.error(
           {

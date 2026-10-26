@@ -138,7 +138,6 @@ describe("Worker integration test", () => {
 
       const [record] = await executionRepo.findAllByJobId(job!.id, 20, 0);
 
-  
       const [updatedJob] = await db
         .select()
         .from(Job)
