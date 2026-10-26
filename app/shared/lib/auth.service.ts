@@ -29,8 +29,6 @@ export const auth = betterAuth({
   advanced: {
     cookiePrefix: "freecron",
     database: { generateId: "uuid" },
-    //Secure cookies are unreplayable by supertest's jar over its http
-    //transport — keep them off under test
     useSecureCookies: process.env.NODE_ENV !== "test",
   },
 });
