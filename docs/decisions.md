@@ -8,7 +8,7 @@ Central list of architectural and behavioral decisions in freecron, each with th
 
 **Status:** adopted, enforced at all call sites.
 
-**Context.** Structured logging with three root pino loggers (`reqLogger`, `workerLogger`, `watchManLogger` in `app/shared/lib/logger.service.ts`) only pays off if each line identifies its origin without needing stack traces.
+**Context.** Structured logging with four root pino loggers (`reqLogger`, `workerLogger`, `watchManLogger`, `infraLogger` in `app/shared/lib/logger.service.ts`) only pays off if each line identifies its origin without needing stack traces.
 
 **Decision.** Every log call site passes two explicit fields: `filename` (the bare basename of the file, no paths, no line numbers) and `functionname` (`Class.method` for methods, bare name for module helpers). Arrow functions under async frameworks are given stable labels instead of `(anonymous)` (for example `findDueJobs.tick`, `ScheduleWorker.on-failed`).
 
@@ -124,3 +124,39 @@ Central list of architectural and behavioral decisions in freecron, each with th
 **Decision.** `queueDTO` carries an optional `triggerId`, and `ScheduleQueue.add` uses `jobId: data.triggerId ?? data.jobId` for the dedupe key. `runJobNow` generates `cron-<id>-runnow-<Date.now()>` per trigger. Paths that *want* dedupe (watchman re-schedule vs create, resume) keep passing `cron-<id>`.
 
 **Consequences.** One DB job can now map to two queue entries side by side (the scheduled `cron-<id>` and an in-flight `cron-<id>-runnow-…`). `unscheduleJob` removes only `cron-<id>`; a run-now trigger survives a delete that lands between trigger and execution, then aborts against the missing row (NotFoundError → BullMQ retries → `removeOnFail` cleans it). Two run-now triggers within the same millisecond coalesce into one execution — accepted.
+
+---
+
+## D-11 — `failure` notifications arm only on the terminal attempt
+
+**Status:** adopted, in `schedular.worker.ts` (`on("failed")`). Found by the failure e2e (`app/e2e/job-failure.test.ts`): a run that recovered on attempt 2 had already queued a failure notification from attempt 1.
+
+**Context.** BullMQ emits `failed` after every failed attempt, and the event itself does not distinguish "will retry" from "gave up". The handler notified unconditionally, so a `failure` rule fired for an attempt the job then recovered from — the user was alerted to a failure that, by the run's own record, never happened. The final-failure double-add (attempt 1 and attempt 2 both notifying) was only invisible because dedupe on `notif-<id>-exec-<id>` collapsed the second insert — masking by accident, not policy.
+
+**Decision.** `on("failed")` runs the same terminal test the Processor's catch block already uses — `const maxAttempts = job?.opts.attempts; const isLastAttempt = job !== undefined && job.attemptsStarted >= maxAttempts!;` — and returns early when not terminal, logging `intermediate failure, skipping notify` with `attemptsStarted`/`attempts` so every suppressed alert is greppable. `job.opts.attempts` is always set by the add path (D-9), so the `!` assertion treats that as an invariant: if it ever fails to hold, the crash is the wanted signal.
+
+**Consequences.** A recovered run notifies nothing (or `success` only, if a `success` rule exists); a used-up budget notifies exactly once, at the moment of truth. Retries, record-keeping and the success path are untouched. Users who want per-attempt visibility get a new rule `event`, not an overload of `failure`.
+
+---
+
+## D-12 — `statusCode` holds a failure status or 0; never a success code on a failed row
+
+**Status:** adopted, in `schedular.worker.ts` (`Processor`) + `execution.service.ts`. Considered and rejected: recording the real 2xx on body-read failures.
+
+**Context.** There are two `fail()` call sites: the HTTP-error branch passes the real status (500, 404, …), and the catch-all passes a literal `0` for everything else — network errors, timeouts, and one surprising member of that company: a 2xx response whose body cannot be read (`response.json()` throwing on malformed JSON under an `application/json` label). A reading `status: failed, statusCode: 200` was proposed so rows would self-report "the call worked, the body didn't".
+
+**Decision.** `statusCode` answers "what HTTP failure status was observed", and on a failed row it may hold only a failure status or `0` — never a success code. `0` is the sentinel for "no judging HTTP status" (network, timeout, unreadable 2xx). The cause lives in `error` (`SyntaxError: Unexpected token …` vs `ECONNREFUSED`), which is what distinguishes those cases today.
+
+**Consequences.** The `statusCode` column stays queryable as a failure summary (`WHERE statusCode >= 500` never drops rows to a lenient status). The cost is the 90% reading: most `0` rows are network/timeout, but a `0` can also mean a 200 the body choked on — read `error` before concluding the server was never reached.
+
+---
+
+## D-13 — Process lifecycle logs run on the infra channel; `fatal` means the process is going down
+
+**Status:** adopted, in `app/index.ts` (+ `infraLogger` in `logger.service.ts`). Found by reading a dev-server boot: "server bound to port" was stamped `service: request-journey`.
+
+**Context.** Boot, drain and exit are process state, not request traffic — but the boot log went out on `reqLogger`, so infra events wore the `request-journey` badge and scrolled through the same stream a human scans for per-request behavior. Nothing before this logged shutdown at all: `^C` died silently with no terminal line.
+
+**Decision.** A fourth root logger, `infraLogger` (`service: infra-journey`), owns process lifecycle: server bind (`info`, `index.boot`) and every exit path (`fatal`, `index.shutdown` — SIGTERM, SIGINT, `uncaughtException`, `unhandledRejection`). The shutdown is single-lane (a `shuttingDown` flag dedupes competing signals), closes the HTTP server, runs `closeInfra()` (D-4), then `process.exit` — with an unref'd 5s force-exit timer so no wedged close can hold the process. Requests keep `reqLogger` through the middleware; the two channels never cross.
+
+**Consequences.** Every dev-server hot reload (tsx watch restarts the child via SIGTERM) now prints a `fatal` "server down" line — truthful (that process did die) and noisy (expected). Was_fatal is now a queryable signal for real crashes: an `uncaughtException`/`unhandledRejection` exit carries the cause on the line and exits 1, while signal exits exit 0.

@@ -29,7 +29,7 @@ docs/                   # decision record (docs/decisions.md) + testing referenc
 
 ## Logging
 
-pino everywhere, zero `console.*` in `app/`. Three roots: `reqLogger` (`request-journey`), `workerLogger` (`worker-journey`), `watchManLogger` (`schedule-watchman`). Every call site carries explicit `filename` (bare basename) and `functionname` fields — D-1 in `docs/decisions.md`.
+pino everywhere, zero `console.*` in `app/`. Four roots: `reqLogger` (`request-journey`), `workerLogger` (`worker-journey`), `watchManLogger` (`schedule-watchman`), `infraLogger` (`infra-journey`). Every call site carries explicit `filename` (bare basename) and `functionname` fields — D-1 in `docs/decisions.md`.
 
 ## Error model
 

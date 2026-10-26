@@ -48,3 +48,19 @@ export const watchManLogger = pino({
 
   base: { service: "schedule-watchman" },
 });
+export const infraLogger = pino({
+  level: process.env.NODE_ENV === "development" ? "info" : "debug",
+  redact: {
+    paths: [
+      "req.headers.authorization",
+      "req.headers.cookie",
+      "password",
+      "token",
+      "apiKey",
+      "creditCard",
+    ],
+    censor: "[REDACTED]",
+  },
+
+  base: { service: "infra-journey" },
+});

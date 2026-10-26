@@ -80,12 +80,9 @@ export class ScheduleWorker {
         userId: userId,
       });
 
-      //Same terminal test as the Processor's catch: intermediate attempts are
-      //re-enqueued by bull, so the failure notification is armed only when
-      //the attempt budget is exhausted
       const maxAttempts = job?.opts.attempts;
       const isLastAttempt =
-        job !== undefined && job.attemptsStarted >= (maxAttempts ?? 1);
+        job !== undefined && job.attemptsStarted >= maxAttempts!;
       if (!isLastAttempt) {
         log.warn(
           {

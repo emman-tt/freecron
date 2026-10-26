@@ -6,7 +6,7 @@ import express, {
   type Response,
 } from "express";
 import "./database/db.config.js";
-import { worker, scheduler } from "./infra.js";
+import { worker, scheduler, closeInfra } from "./infra.js";
 import { JobRouter } from "./modules/Jobs/job.routes.js";
 import { ExecutionRouter } from "./modules/Execution/execution.route.js";
 import { NotificationRouter } from "./modules/Notification/notification.routes.js";
@@ -15,7 +15,7 @@ import { errorHandler } from "./shared/errors/http.errors.js";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./shared/lib/auth.service.js";
 import { requestLogger } from "./shared/middleware/logger.js";
-import { reqLogger } from "./shared/lib/logger.service.js";
+import { infraLogger } from "./shared/lib/logger.service.js";
 import { authMiddleware } from "./shared/middleware/auth.js";
 
 const PORT = process.env.PORT;
@@ -36,15 +36,15 @@ app.use("/api/users", requestLogger, authMiddleware, UserRouter);
 
 app.use(errorHandler);
 
-//Supertest attaches its own ephemeral server in tests — binding PORT here
-//would leave a handle jest cannot exit from
+//Lifecycle logs (boot, drain, exit) run on the infra channel, never on the
+//request logger — boot-shutdown is process state, not request traffic (D-13)
 if (process.env.NODE_ENV !== "test") {
-  app.listen(PORT, () => {
-    reqLogger.info(
+  const server = app.listen(PORT, () => {
+    infraLogger.info(
       {
         port: PORT,
         filename: "index.ts",
-        functionname: "(anonymous)",
+        functionname: "index.boot",
       },
       "server bound to port",
     );
@@ -52,4 +52,40 @@ if (process.env.NODE_ENV !== "test") {
 
   //Watchman sweeps for due jobs
   scheduler.findDueJobs();
+
+  //One-lane shutdown: the first arriving signal/defect opens the gate, the
+  //rest dedupe through the flag. Fatal is the process saying goodbye for is
+  //good — nothing after it can upgrade the level
+  let shuttingDown = false;
+  const shutDown = (cause: string, error?: unknown) => {
+    if (shuttingDown) {
+      return;
+    }
+    shuttingDown = true;
+
+    infraLogger.fatal(
+      {
+        cause,
+        error: error !== undefined ? String(error) : undefined,
+        filename: "index.ts",
+        functionname: "index.shutdown",
+      },
+      "server down — draining connections and closing infra",
+    );
+
+    server.close();
+    server.closeAllConnections();
+    closeInfra().finally(() => process.exit(error !== undefined ? 1 : 0));
+    //If a close path wedges, the exit is not negotiable — force it
+    setTimeout(() => process.exit(1), 5000).unref();
+  };
+
+  process.on("SIGTERM", () => shutDown("SIGTERM"));
+  process.on("SIGINT", () => shutDown("SIGINT"));
+  process.on("uncaughtException", (error) =>
+    shutDown("uncaughtException", error),
+  );
+  process.on("unhandledRejection", (reason) =>
+    shutDown("unhandledRejection", reason),
+  );
 }
