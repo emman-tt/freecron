@@ -30,7 +30,7 @@ export class ScheduleQueue {
         },
       },
       {
-        jobId: data.jobId,
+        jobId: data.triggerId ?? data.jobId,
         priority: data.priority,
         delay: data.delay,
         attempts: process.env.NODE_ENV === "test" ? 2 : 5,

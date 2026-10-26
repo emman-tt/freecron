@@ -14,4 +14,9 @@ export interface queueDTO {
   userId: string;
   priority: number;
   delay: number;
+  //Unique bull job id per trigger. Required when several triggers may exist
+  //for one DB job (e.g. run-now) — bull dedupes on the id argument, so a
+  //second add under the same value would be swallowed by the scheduled
+  //delayed job instead of running immediately
+  triggerId?: string;
 }

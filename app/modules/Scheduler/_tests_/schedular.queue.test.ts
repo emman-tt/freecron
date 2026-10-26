@@ -47,8 +47,15 @@ describe("Schdular queue integration tests", () => {
     //Act
     await queue.add(queueJob);
 
-    const result = await queue.getQueue().getJob(queueJob.jobId);
-
+     //queue.add is fire-and-forget in scheduleJob, so give the write a moment to land in Redis instead of racing it
+    let result;
+    for (let attempt = 0; attempt < 10; attempt++) {
+      result = await queue.getQueue().getJob(queueJob.jobId);
+      if (result) {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
     //Assert
     expect(result?.opts.attempts).toEqual(2);
     expect(result?.opts.removeOnComplete).toBe(true);

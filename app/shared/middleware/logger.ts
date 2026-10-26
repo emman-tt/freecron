@@ -13,7 +13,7 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
     { method: req.method, path: req.url, query: req.query, filename: "logger.ts", functionname: "requestLogger" },
     "request started",
   );
-
+ 
   res.on("finish", () => {
     req.log.info(
       {

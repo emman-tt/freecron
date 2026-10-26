@@ -403,6 +403,7 @@ describe("Job Controller", () => {
 
     //Assert
     expect(jobService.runJobNow).toHaveBeenCalledWith(5, USER_ID, mockLog);
+    expect(res.status).toHaveBeenCalledWith(202);
     expect(res.json).toHaveBeenCalledWith({ status: "success", data: true });
   });
 

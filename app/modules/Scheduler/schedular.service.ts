@@ -66,14 +66,15 @@ export class SchedularService {
   }
 
   async runJobNow(jobId: number, userId: string, log: Logger) {
-    //Queue  and run jobs immediately with higher priority of 1 instead of 10 and no delay
-    const id = `cron-${jobId}`;
+    //Queue and run jobs immediately with higher priority of 1 instead of 10 and no delay
+    const triggerId = `cron-${jobId}-runnow-${Date.now()}`;
 
     const queueEntity: queueDTO = {
-      jobId: id,
+      jobId: `cron-${jobId}`,
       userId: userId,
       priority: 1,
       delay: 0,
+      triggerId,
     };
     this.queue.add(queueEntity);
     //Log job scheduled now
@@ -81,7 +82,7 @@ export class SchedularService {
       {
         jobId: jobId,
         userId: userId,
-        queueId: id,
+        queueId: triggerId,
         priority: 1,
         delay: 0,
         filename: "schedular.service.ts",

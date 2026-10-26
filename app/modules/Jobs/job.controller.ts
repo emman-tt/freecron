@@ -282,7 +282,9 @@ export class JobController {
 
       await this.jobService.runJobNow(jobId, req.userId, req.log);
 
-      res.status(200).json({
+      //202 Accepted — trigger accepted, the execution is created
+      //asynchronously by the worker
+      res.status(202).json({
         status: "success",
         data: true,
       });

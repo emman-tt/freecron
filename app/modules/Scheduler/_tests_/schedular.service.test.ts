@@ -82,6 +82,9 @@ describe("Scheduler Service", () => {
       ...queueParams,
       delay: 0,
       priority: 1,
+      //A unique bull job id per trigger — the scheduled delayed job already
+      //occupies cron-<jobId> and bull dedupes same-id adds
+      triggerId: expect.stringMatching(/^cron-8-runnow-\d+$/),
     });
   });
 

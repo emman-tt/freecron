@@ -5,8 +5,9 @@ export interface userResponseDTO {
   startedAt: Date;
   completedAt: Date | null;
   duration: number | null;
-  //   error: string | null;
-  //   response: Record<string, unknown>;
+  statusCode: number | null;
+  error: string | null;
+  // response: Record<string, unknown>;
 }
 
 export interface queueResponse {

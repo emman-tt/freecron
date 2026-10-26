@@ -312,6 +312,7 @@ export class JobService {
     //invalidate every cache both for one job and all jobs
     this.invalidateCache(jobId, userId);
     const deleted = (await this.jobRepo.delete(jobId)) as Job;
+    this.schedular.unscheduleJob(jobId, log);
     return this.toResponseDTO(deleted);
   }
 

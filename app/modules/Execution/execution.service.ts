@@ -179,6 +179,8 @@ export class ExecutionService {
       status: data.status,
       completedAt: data.completedAt,
       duration: data.duration,
+      statusCode: data.statusCode,
+      error: data.error,
     };
   }
 }
