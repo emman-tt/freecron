@@ -6,6 +6,7 @@ import type { updateJobDTO } from "../Jobs/job.types.js";
 import type { ExecutionService } from "../Execution/execution.service.js";
 import { workerLogger as logger } from "../../shared/lib/logger.service.js";
 import { NotificationService } from "../Notification/notification.service.js";
+import { executionCounter } from "../../shared/lib/metrics.service.js";
 export class ScheduleWorker {
   private worker: Worker;
   private connection: Redis;
@@ -252,6 +253,8 @@ export class ScheduleWorker {
         ? await response.text()
         : await response.json();
 
+      executionCounter.labels("success").inc();
+
       //Log http command successful
       log.info(
         {
@@ -290,6 +293,7 @@ export class ScheduleWorker {
       await this.jobService.update(jobId, updateData, jobData.userId, log);
     } catch (error: any) {
       const httpCallDuration = Date.now() - httpCallStart;
+      executionCounter.labels("failed").inc();
       if (isHttpError) {
         // Re-throw the original HTTP error so BullMQ keeps the real
         // message as the job's failed reason (an empty Error loses it).

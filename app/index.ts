@@ -6,7 +6,7 @@ import express, {
   type Response,
 } from "express";
 import "./database/db.config.js";
-import { worker, scheduler, closeInfra } from "./infra.js";
+import { worker, scheduler, closeInfra, scheduleQueue } from "./infra.js";
 import { JobRouter } from "./modules/Jobs/job.routes.js";
 import { ExecutionRouter } from "./modules/Execution/execution.route.js";
 import { NotificationRouter } from "./modules/Notification/notification.routes.js";
@@ -17,11 +17,18 @@ import { auth } from "./shared/lib/auth.service.js";
 import { requestLogger } from "./shared/middleware/logger.js";
 import { infraLogger } from "./shared/lib/logger.service.js";
 import { authMiddleware } from "./shared/middleware/auth.js";
+import { queueDepth, register } from "./shared/lib/metrics.service.js";
 
 const PORT = process.env.PORT;
 export const app: express.Express = express();
 
+app.get("/metrics", async (req, res) => {
+  res.set("Content-Type", register.contentType);
+  res.end(await register.metrics());
+});
+
 app.all("/api/auth/{*any}", requestLogger, toNodeHandler(auth));
+
 app.use(express.json());
 
 app.use("/api/jobs", requestLogger, authMiddleware, JobRouter);
@@ -36,8 +43,6 @@ app.use("/api/users", requestLogger, authMiddleware, UserRouter);
 
 app.use(errorHandler);
 
-//Lifecycle logs (boot, drain, exit) run on the infra channel, never on the
-//request logger — boot-shutdown is process state, not request traffic (D-13)
 if (process.env.NODE_ENV !== "test") {
   const server = app.listen(PORT, () => {
     infraLogger.info(
@@ -53,9 +58,19 @@ if (process.env.NODE_ENV !== "test") {
   //Watchman sweeps for due jobs
   scheduler.findDueJobs();
 
-  //One-lane shutdown: the first arriving signal/defect opens the gate, the
-  //rest dedupe through the flag. Fatal is the process saying goodbye for is
-  //good — nothing after it can upgrade the level
+  //Prometheus guage
+  //It runs every 15 seconds to find total counts in queue
+  setInterval(async () => {
+    const executionCount = await scheduleQueue.getQueue().getJobCounts();
+    for (const [state, count] of Object.entries(executionCount)) {
+      queueDepth.labels("execution", state).set(Number(count));
+    }
+    const notificationCount = await scheduleQueue.getQueue().getJobCounts();
+    for (const [state, count] of Object.entries(notificationCount)) {
+      queueDepth.labels("notification", state).set(Number(count));
+    }
+  }, 15000);
+
   let shuttingDown = false;
   const shutDown = (cause: string, error?: unknown) => {
     if (shuttingDown) {
@@ -76,7 +91,6 @@ if (process.env.NODE_ENV !== "test") {
     server.close();
     server.closeAllConnections();
     closeInfra().finally(() => process.exit(error !== undefined ? 1 : 0));
-    //If a close path wedges, the exit is not negotiable — force it
     setTimeout(() => process.exit(1), 5000).unref();
   };
 

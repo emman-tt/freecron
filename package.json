@@ -27,6 +27,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@prometheus-io/client": "^0.16.1",
     "@slack/web-api": "^8.2.0",
     "@types/express": "^5.0.6",
     "better-auth": "^1.7.7",

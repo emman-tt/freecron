@@ -10,15 +10,22 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
   req.log = reqLogger.child({ requestId }) as Logger;
 
   req.log.info(
-    { method: req.method, path: req.url, query: req.query, filename: "logger.ts", functionname: "requestLogger" },
+    {
+      method: req.method,
+      path: req.originalUrl,
+      query: req.query,
+      param: req.params,
+      filename: "logger.ts",
+      functionname: "requestLogger",
+    },
     "request started",
   );
- 
+
   res.on("finish", () => {
     req.log.info(
       {
         method: req.method,
-        path: req.url,
+        path: req.originalUrl,
         status: res.statusCode,
         durationMs: Date.now() - start,
         filename: "logger.ts",
