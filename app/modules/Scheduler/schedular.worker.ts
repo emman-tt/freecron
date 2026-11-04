@@ -6,7 +6,11 @@ import type { updateJobDTO } from "../Jobs/job.types.js";
 import type { ExecutionService } from "../Execution/execution.service.js";
 import { workerLogger as logger } from "../../shared/lib/logger.service.js";
 import { NotificationService } from "../Notification/notification.service.js";
-import { executionCounter } from "../../shared/lib/metrics.service.js";
+import {
+  executionCounter,
+  httpFetchDuration,
+  executionDuration,
+} from "../../shared/lib/metrics.service.js";
 export class ScheduleWorker {
   private worker: Worker;
   private connection: Redis;
@@ -116,6 +120,7 @@ export class ScheduleWorker {
     const jobData = job.data as queueResponse;
     const jobId = Number(jobData.jobId.split("-")[1]);
     let isHttpError = false;
+    const processorStart = Date.now();
 
     //Logger base
     const log = logger.child({
@@ -178,8 +183,20 @@ export class ScheduleWorker {
 
       const httpCallDuration = Date.now() - httpCallStart;
       const statusCode = response.status;
+      //Fetch histogram: response arrived and is usable
+      if (response.ok) {
+        httpFetchDuration.observe(
+          { outcome: "success" },
+          httpCallDuration / 1000,
+        );
+      }
       //Throw custom http error (4xx,5xx) for the processor to catch and send to failed state
       if (!response.ok) {
+        //Fetch histogram: response arrived but the HTTP status judges failure
+        httpFetchDuration.observe(
+          { outcome: "http_error" },
+          httpCallDuration / 1000,
+        );
         const errorBody = response.headers.get("Content-type")?.includes("text")
           ? await response.text()
           : await response.json();
@@ -226,6 +243,13 @@ export class ScheduleWorker {
           };
 
           await this.jobService.update(jobId, updateData, jobData.userId, log);
+
+          //Execution histogram: HTTP terminal failure — only the spent attempt
+          //budget observes; intermediate attempts rethrow without observing
+          executionDuration.observe(
+            { status: "failed" },
+            (Date.now() - processorStart) / 1000,
+          );
 
           //    Sends notifications to the user - Notification service needed
         } else {
@@ -291,14 +315,27 @@ export class ScheduleWorker {
       };
 
       await this.jobService.update(jobId, updateData, jobData.userId, log);
+
+      //Execution histogram: run reached its success terminal state
+      executionDuration.observe(
+        { status: "success" },
+        (Date.now() - processorStart) / 1000,
+      );
     } catch (error: any) {
       const httpCallDuration = Date.now() - httpCallStart;
-      executionCounter.labels("failed").inc();
       if (isHttpError) {
         // Re-throw the original HTTP error so BullMQ keeps the real
         // message as the job's failed reason (an empty Error loses it).
         throw error;
       }
+
+      //Fetch histogram: response never arrived or could not be exchanged —
+      //timeouts, network errors, unforeseen runtime faults
+      httpFetchDuration.observe(
+        { outcome: "fetch_error" },
+        httpCallDuration / 1000,
+      );
+      executionCounter.labels("failed").inc();
 
       //Errors including timeout , network errors and unforseen errors
 
@@ -346,6 +383,13 @@ export class ScheduleWorker {
         };
 
         await this.jobService.update(jobId, updateData, jobData.userId, log);
+
+        //Execution histogram: only the spent attempt budget counts here —
+        //intermediate attempts rethrow below and are never terminal
+        executionDuration.observe(
+          { status: "failed" },
+          (Date.now() - processorStart) / 1000,
+        );
 
         //    Sends notifications to the user - Notification service needed
       } else {

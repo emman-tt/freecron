@@ -160,3 +160,18 @@ Central list of architectural and behavioral decisions in freecron, each with th
 **Decision.** A fourth root logger, `infraLogger` (`service: infra-journey`), owns process lifecycle: server bind (`info`, `index.boot`) and every exit path (`fatal`, `index.shutdown` — SIGTERM, SIGINT, `uncaughtException`, `unhandledRejection`). The shutdown is single-lane (a `shuttingDown` flag dedupes competing signals), closes the HTTP server, runs `closeInfra()` (D-4), then `process.exit` — with an unref'd 5s force-exit timer so no wedged close can hold the process. Requests keep `reqLogger` through the middleware; the two channels never cross.
 
 **Consequences.** Every dev-server hot reload (tsx watch restarts the child via SIGTERM) now prints a `fatal` "server down" line — truthful (that process did die) and noisy (expected). Was_fatal is now a queryable signal for real crashes: an `uncaughtException`/`unhandledRejection` exit carries the cause on the line and exits 1, while signal exits exit 0.
+
+---
+
+## D-14 — Duration histograms are terminal-only and carry no per-job labels
+
+**Status:** adopted, in `schedular.worker.ts` + `metrics.service.ts`. Extends the pre-existing `freecron_executions_total` counter and `GET /metrics` scrape endpoint.
+
+**Context.** The worker computed `durationMs` for log lines only — the latencies went to nowhere queryable: no histogram, no percentile, no drift detection. Two durations matter and they are different numbers: the fetch to the target (network time) and the whole in-process execution (DB work included, queue stay-time excluded).
+
+**Decision.** Two histograms in seconds, riding the Processor's existing control flow — no new try/catch, every observe site sits in a branch already reached:
+- `freecron_http_fetch_duration_seconds`, label `outcome`: `success` (usable response), `http_error` (response arrived, status judges failure), `fetch_error` (response never arrived or could not be exchanged — timeouts, network, unforeseen). Recorded on every attempt.
+- `freecron_execution_duration_seconds`, label `status`: `success` (after complete + lastRunAt) and `failed` at both terminal sites (HTTP-judged and catch-all) — observed only when the attempt budget is spent, the same `isLastAttempt` gate as D-11; intermediate attempts observe nothing from this histogram.
+- No `jobId`/`userId` labels: unbounded per-job series are a permanent scrape cost; per-job numbers belong to the DB. Process defaults (`collectDefaultMetrics`) are on and share the registry exposed by `GET /metrics`.
+
+**Consequences.** `fetch_error` unions timeout with network and parse faults — profitable latency data, at the cost of reading `error` logs for which member failed (same spirit as D-12's sentinel). Timeouts land in the fetch histogram at the configured `timeout` wall, so the 10s+ buckets stay mostly empty under the current 50s default window. Histogram sites are hand-placed: a future branch that exits the Processor outside the observed ones must extend them or the metric silently under-counts.

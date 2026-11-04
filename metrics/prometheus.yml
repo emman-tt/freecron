@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 15s
+
+  external_labels:
+    monitor: "codelab-monitor"
+
+scrape_configs:
+  - job_name: "freecron"
+
+    # Override the global default and scrape targets from this job every 5 seconds.
+    scrape_interval: 5s
+    metrics_path: "/metrics"
+
+    static_configs:
+      - targets: ["host.docker.internal:5002"]

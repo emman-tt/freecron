@@ -224,4 +224,58 @@ describe("Job Execution Lifecycle", () => {
     },
     WAIT_TTL + 5000,
   );
+
+  it(
+    "should expose the histograms on /metrics — counts move after a run",
+    async () => {
+      const created = await agent.post("/api/jobs").send(CREATE_PAYLOAD);
+      expect(created.status).toEqual(201);
+      const jobId = Number(created.body.data.id);
+
+      //Sum of _count for one metric+label across its whole scrape line set
+      async function countOf(body: string, metric: string, label: string) {
+        const line = body
+          .split("\n")
+          .find(
+            (line) => line.startsWith(metric) && line.includes(`"${label}"`),
+          );
+        expect(line).toBeDefined();
+        return Number(line!.split(" ").pop());
+      }
+
+      const before = await agent.get("/metrics");
+      expect(before.status).toEqual(200);
+      expect(String(before.headers["content-type"])).toContain("text/plain");
+
+      fetchMock.mockResponse(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+
+      await agent
+        .post(`/api/jobs/${jobId}`)
+        .expect(202)
+        .expect({ status: "success", data: true });
+
+      const trigger = await findRunNowTrigger(jobId);
+      await expect(
+        trigger.waitUntilFinished(queueEvents, WAIT_TTL),
+      ).resolves.toBeDefined();
+
+      const after = await agent.get("/metrics");
+      expect(after.status).toEqual(200);
+
+      //Both histograms moved by exactly this run: fetch (success leg) and
+      //the terminal execution itself — D-6: scraped from the real surface
+      expect(
+        (await countOf(after.text, "freecron_http_fetch_duration_seconds_count", "success")) -
+          (await countOf(before.text, "freecron_http_fetch_duration_seconds_count", "success")),
+      ).toEqual(1);
+      expect(
+        (await countOf(after.text, "freecron_execution_duration_seconds_count", "success")) -
+          (await countOf(before.text, "freecron_execution_duration_seconds_count", "success")),
+      ).toEqual(1);
+    },
+    WAIT_TTL + 5000,
+  );
 });

@@ -31,6 +31,12 @@ docs/                   # decision record (docs/decisions.md) + testing referenc
 
 pino everywhere, zero `console.*` in `app/`. Four roots: `reqLogger` (`request-journey`), `workerLogger` (`worker-journey`), `watchManLogger` (`schedule-watchman`), `infraLogger` (`infra-journey`). Every call site carries explicit `filename` (bare basename) and `functionname` fields — D-1 in `docs/decisions.md`.
 
+## Metrics
+
+`GET /metrics` — unauthenticated Prometheus scrape (0.0.4 text), on the `@prometheus-io/client` registry: process defaults, `freecron_executions_total`, and duration histograms `freecron_http_fetch_duration_seconds` (per attempt, by `outcome`) and `freecron_execution_duration_seconds` (terminal runs only) — D-14 in `docs/decisions.md`.
+
+The scrape pipeline (D-14) ships with the compose stack: `docker compose up -d prometheus` starts Prometheus on `localhost:9090` using `metrics/prometheus.yml`, which scrapes the dev server's `/metrics` every 5s via `host.docker.internal:5002`. The app must be running locally first (`pnpm run dev`). Queue depth (`queueDepth`, set every 15s from `app/index.ts`) is exposed as `freecron_queue_depth` per `(queue, state)`. Check the target is `UP` at `http://localhost:9090/targets`, then query e.g. `rate(freecron_executions_total[5m])`.
+
 ## Error model
 
 All domain errors extend `DomainError` (`app/shared/errors/business.errors.ts`) and render through one `errorHandler` (`http.errors.ts`): `audit`-style body `{status, error, message}`. Known mapping: validation → 400, unauthenticated → 401, permission/ownership → **403** (D-2), missing → 404, business rules → 422, internal → 500.

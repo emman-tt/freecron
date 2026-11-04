@@ -39,8 +39,18 @@ services:
     ports:
       - "5432:5432"
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: freecron-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./metrics/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+
 volumes:
   redis-test-data:
   redis-prod-data:
   pg-prod-data:
   pg-test-data:
+  prometheus-data:
