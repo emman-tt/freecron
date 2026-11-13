@@ -7,6 +7,11 @@ import express, {
 } from "express";
 import "./database/db.config.js";
 import { worker, scheduler, closeInfra, scheduleQueue, NotifQueue, checkInfra } from "./infra.js";
+import {
+  executionRepo,
+  STALE_RUNNING_WINDOW_MS,
+  STALE_RUNNING_ERROR,
+} from "./modules/Execution/execution.repository.js";
 import { JobRouter } from "./modules/Jobs/job.routes.js";
 import { ExecutionRouter } from "./modules/Execution/execution.route.js";
 import { NotificationRouter } from "./modules/Notification/notification.routes.js";
@@ -69,6 +74,36 @@ async function boot(): Promise<void> {
       "infra unreachable — start the compose stack (docker compose up -d) and retry",
     );
     process.exit(1);
+  }
+
+  //Stale-running sweep (D-15), boot-time one-shot: worker, watchman and API
+  //share one Node process, so a ghost "running" row can only be created by a
+  //process death — and every death re-enters through this boot. Bookkeeping
+  //only: a failed sweep logs and boots anyway rather than blocking serving
+  try {
+    const swept = await executionRepo.markStaleRunning(
+      new Date(Date.now() - STALE_RUNNING_WINDOW_MS),
+      STALE_RUNNING_ERROR,
+    );
+    if (swept.length > 0) {
+      infraLogger.warn(
+        {
+          count: swept.length,
+          filename: "index.ts",
+          functionname: "index.boot",
+        },
+        "stale running executions marked failed",
+      );
+    }
+  } catch (error) {
+    infraLogger.error(
+      {
+        error: String(error),
+        filename: "index.ts",
+        functionname: "index.boot",
+      },
+      "stale running sweep failed — booting anyway",
+    );
   }
 
   const server = app.listen(PORT, () => {

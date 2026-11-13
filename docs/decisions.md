@@ -135,7 +135,7 @@ Central list of architectural and behavioral decisions in freecron, each with th
 
 **Decision.** `on("failed")` runs the same terminal test the Processor's catch block already uses — `const maxAttempts = job?.opts.attempts; const isLastAttempt = job !== undefined && job.attemptsStarted >= maxAttempts!;` — and returns early when not terminal, logging `intermediate failure, skipping notify` with `attemptsStarted`/`attempts` so every suppressed alert is greppable. `job.opts.attempts` is always set by the add path (D-9), so the `!` assertion treats that as an invariant: if it ever fails to hold, the crash is the wanted signal.
 
-**Consequences.** A recovered run notifies nothing (or `success` only, if a `success` rule exists); a used-up budget notifies exactly once, at the moment of truth. Retries, record-keeping and the success path are untouched. Users who want per-attempt visibility get a new rule `event`, not an overload of `failure`.
+**Consequences.** A recovered run notifies nothing (or `success` only, if a `success` rule exists); a used-up budget notifies exactly once, at the moment of truth. Retries, record-keeping and the success path are untouched. Users who want per-attempt visibility get a new rule `event`, not an overload of `failure`. *Broadened 2026-11:* the terminal test also accepts `UnrecoverableError` — the Processor throws it for `ENOTFOUND`-classified fetch faults (dead domain; retrying is provably futile, and BullMQ abandons the remaining attempts), so the failure row and notification land on the first attempt. Every other cause keeps the full attempt budget (D-9); `EAI_AGAIN` remains the transient DNS code, distinct from `ENOTFOUND`.
 
 ---
 
@@ -175,3 +175,15 @@ Central list of architectural and behavioral decisions in freecron, each with th
 - No `jobId`/`userId` labels: unbounded per-job series are a permanent scrape cost; per-job numbers belong to the DB. Process defaults (`collectDefaultMetrics`) are on and share the registry exposed by `GET /metrics`.
 
 **Consequences.** `fetch_error` unions timeout with network and parse faults — profitable latency data, at the cost of reading `error` logs for which member failed (same spirit as D-12's sentinel). Timeouts land in the fetch histogram at the configured `timeout` wall, so the 10s+ buckets stay mostly empty under the current 50s default window. Histogram sites are hand-placed: a future branch that exits the Processor outside the observed ones must extend them or the metric silently under-counts.
+
+---
+
+## D-15 — Stale `running` rows are closed once per boot, not by a recurring sweep
+
+**Status:** adopted, in `execution.repository.ts` (`markStaleRunning`) + `app/index.ts` boot.
+
+**Context.** A worker that dies mid-execution (sleep, force-kill, crash) leaves the execution row it opened in `running` forever: single-process means BullMQ stall recovery has no peer to reclaim the job through, and the queue entry is gone by the time the process returns (verified against the 2026-11-05 orphan: `bull:*cron-<id>` keys absent, stalled list empty, row's `updatedAt` frozen at creation). Two remedies were considered: a recurring watchman sweep, or nothing (read-time interpretation of old `running` rows).
+
+**Decision.** One `markStaleRunning` statement at boot — before `listen`, after the infra probe, in its own try/catch so a sweep failure logs and boots anyway. Anything `running` with `startedAt` older than 15 minutes is marked `failed` with `statusCode 0` (D-12 sentinel) and a self-describing error string; `duration` stays null (the run never finished — do not fabricate). No cron, no new dependencies in the composition root.
+
+**Consequences.** The threshold rests on D-9's ceiling (~3 min for 5 attempts × timeout + backoffs); 15 minutes gives wide margin, so no genuinely in-flight run is ever swept. Coverage is complete for single-process deploys because every ghost implies a process death and every death re-enters through boot; tsx hot-reload restarts heal ghosts within one code save. Multi-worker deployments make this redundant via BullMQ stall recovery — but not harmful (idempotent, one query per boot), and it still covers the everyone-died-at-once case. A recurring sweep was rejected as over-engineering for the single-process architecture it would run in.

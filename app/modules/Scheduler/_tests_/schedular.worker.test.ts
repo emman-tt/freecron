@@ -10,7 +10,10 @@ import {
 import { QueueEvents } from "bullmq";
 import { eq } from "drizzle-orm";
 
-import { ScheduleWorker } from "../schedular.worker.js";
+import {
+  ScheduleWorker,
+  describeFetchError,
+} from "../schedular.worker.js";
 import { ScheduleQueue } from "../schedular.queue.js";
 import {
   CleanTestInfra,
@@ -486,4 +489,109 @@ describe("Worker integration test", () => {
     },
     WAIT_TTL + 5000,
   );
+
+  it(
+    "should fail an ENOTFOUND job on the first attempt — terminal by classification",
+    async () => {
+      const user = await createUserTest("Emma");
+      const job = await createJobTest(user.id, buildJobEntity(user.id));
+      const rule = await notificationRepo.create(
+        {
+          type: "email",
+          event: "failure",
+          target: "owner@example.com",
+          channelId: null,
+        },
+        job?.id as number,
+      );
+      const queueJob: queueDTO = {
+        jobId: `cron-${job?.id}`,
+        userId: user.id,
+        priority: 1,
+        delay: 0,
+      };
+
+      //Node wraps every DNS "domain does not exist" into a generic fetch
+      //failure — the discriminating code lives on error.cause (taxonomy)
+      fetchMock.mockReject(
+        new Error("fetch failed", {
+          cause: Object.assign(
+            new Error("getaddrinfo ENOTFOUND dead.example"),
+            { code: "ENOTFOUND" },
+          ),
+        }),
+      );
+
+      const queuedJob = await scheduleQueue.add(queueJob);
+      await expect(
+        queuedJob.waitUntilFinished(queueEvents, WAIT_TTL),
+      ).rejects.toThrow();
+
+      //UnrecoverableError ends the job at the first attempt instead of
+      //spending the budget (attempts = 2 under NODE_ENV=test, D-9). The
+      //non-ENOTFOUND retry path stays covered by the recover-on-retry test
+      expect(fetchMock.mock.calls.length).toBe(1);
+
+      const records = await executionRepo.findAllByJobId(job!.id, 20, 0);
+      expect(records).toHaveLength(1);
+      const failedRecord = records.find((row) => row.status === "failed");
+      expect(failedRecord).toBeDefined();
+      expect(failedRecord?.statusCode).toBe(0);
+      expect(failedRecord?.error).toContain("ENOTFOUND");
+
+      //attemptsStarted (1) < attempts (2), yet the notification fires: the
+      //UnrecoverableError path is terminal for the notify gate as well
+      const notifJob = await waitForNotification(`notif-${rule?.id}`);
+      expect(notifJob.data).toMatchObject({
+        userId: user.id,
+        executionId: failedRecord?.id,
+        event: "failure",
+      });
+    },
+    WAIT_TTL + 5000,
+  );
+});
+
+//Pure taxonomy — no infra. Node's fetch buries the real reason on error.cause
+//and reports timeouts as a DOMException (not an Error), both of which
+//describeFetchError surfaces into the recorded error string
+describe("describeFetchError — fetch error taxonomy", () => {
+  it("appends the underlying cause code from error.cause", () => {
+    const error = new Error("fetch failed", {
+      cause: Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:5432"), {
+        code: "ECONNREFUSED",
+      }),
+    });
+    expect(describeFetchError(error)).toBe("fetch failed (ECONNREFUSED)");
+  });
+
+  it("appends nothing when there is no discriminating cause", () => {
+    expect(
+      describeFetchError(new Error("Job id is required for response DTO")),
+    ).toBe("Job id is required for response DTO");
+  });
+
+  it("labels the timeout wall as (timeout) — DOMException shape", () => {
+    const error = new DOMException(
+      "The operation was aborted due to timeout",
+      "TimeoutError",
+    );
+    expect(describeFetchError(error)).toBe(
+      "TimeoutError: The operation was aborted due to timeout (timeout)",
+    );
+  });
+
+  it("labels Error-shaped timeouts the same way", () => {
+    const error = Object.assign(
+      new Error("The operation was aborted due to timeout"),
+      { name: "TimeoutError" },
+    );
+    expect(describeFetchError(error)).toBe(
+      "The operation was aborted due to timeout (timeout)",
+    );
+  });
+
+  it("stringifies non-Error throws unchanged", () => {
+    expect(describeFetchError("boom")).toBe("boom");
+  });
 });

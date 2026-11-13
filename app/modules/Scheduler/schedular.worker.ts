@@ -1,4 +1,4 @@
-import { Worker, Job } from "bullmq";
+import { Worker, Job, UnrecoverableError } from "bullmq";
 import type { Redis } from "ioredis";
 import type { JobService } from "../Jobs/job.service.js";
 import type { queueResponse } from "./schedular.types.js";
@@ -12,22 +12,18 @@ import {
   executionDuration,
 } from "../../shared/lib/metrics.service.js";
 
-//Fetch error taxonomy (D-12 companion). Node's fetch collapses every fault
-//into one generic message ("fetch failed", 1579 identical rows and counting)
-//— the discriminating reason lives one level down: on error.cause.code
-//(ENOTFOUND = dead domain, ECONNREFUSED = nothing listening, EAI_AGAIN =
-//DNS flap) or on a TimeoutError name for the job's own timeout wall. The
-//cause is appended in parentheses so execution rows can separate "target
-//unreachable" from "target slow" without a schema change or new columns.
-export function describeFetchError(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error);
+function fetchErrorCause(error: unknown): string | undefined {
   const name = (error as { name?: string } | undefined)?.name;
   if (name === "TimeoutError") {
-    return `${message} (timeout)`;
+    return "timeout";
   }
-  const code = (error as { cause?: { code?: string } } | undefined)?.cause
-    ?.code;
-  return code ? `${message} (${code})` : message;
+  return (error as { cause?: { code?: string } } | undefined)?.cause?.code;
+}
+
+export function describeFetchError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  const cause = fetchErrorCause(error);
+  return cause ? `${message} (${cause})` : message;
 }
 
 export class ScheduleWorker {
@@ -107,7 +103,9 @@ export class ScheduleWorker {
       const maxAttempts = job?.opts.attempts;
       const isLastAttempt =
         job !== undefined && job.attemptsStarted >= maxAttempts!;
-      if (!isLastAttempt) {
+
+      const isTerminal = isLastAttempt || error instanceof UnrecoverableError;
+      if (!isTerminal) {
         log.warn(
           {
             attemptsStarted: job?.attemptsStarted,
@@ -363,7 +361,16 @@ export class ScheduleWorker {
       const maxAttempts = job?.opts.attempts;
       const isLastAttempt = job.attemptsStarted >= maxAttempts!;
 
-      if (isLastAttempt) {
+      //ENOTFOUND (the domain does not exist) is terminal by classification:
+      //BullMQ will not retry an UnrecoverableError, so the row + notification
+      //must land now regardless of the remaining attempt budget — otherwise
+      //the row would stay "running" forever (a new ghost class). Everything
+      //else keeps D-9's retry budget (wifi flaps and 5xx recover in seconds;
+      //EAI_AGAIN is the transient DNS code, distinct from ENOTFOUND)
+      const isTerminal =
+        isLastAttempt || fetchErrorCause(error) === "ENOTFOUND";
+
+      if (isTerminal) {
         //Log http command failed permanently
         log.error(
           {
@@ -427,7 +434,9 @@ export class ScheduleWorker {
         );
       }
 
-      throw error;
+      throw fetchErrorCause(error) === "ENOTFOUND"
+        ? new UnrecoverableError(errorMessage)
+        : error;
     }
   }
 }

@@ -246,8 +246,84 @@ describe("Execution repository", () => {
     });
     expect(persisted?.startedAt).toEqual(created?.startedAt);
     expect(persisted?.createdAt).toEqual(created?.createdAt);
+    //updatedAt is written from the JS clock ($onUpdate) while createdAt comes
+    //from the DB clock (now()) — Docker VM clock drift can order the two
+    //clocks either way, so assert "not reset" within a skew tolerance rather
+    //than a cross-clock >=
     expect(persisted?.updatedAt.getTime()).toBeGreaterThanOrEqual(
-      created?.updatedAt.getTime() as number,
+      (created?.updatedAt.getTime() as number) - 2000,
     );
+  });
+
+  it("should sweep stale running rows and leave fresh ones untouched", async () => {
+    //Arrange: one orphan (started 20 min ago — beyond any legit lifetime,
+    //D-9's attempts × timeout + backoffs cap out near 3 min) and one run
+    //that is genuinely in flight
+    const user = await createUserTest("Emma");
+    const jobEntity: Job = {
+      name: "astroverse",
+      cronExpression: "*/5 * * * *",
+      lastRunAt: null,
+      nextRunAt: new Date("2026-09-22T07:00:00.001Z"),
+      httpCommand: "https://google.com",
+      httpMethod: "PATCH",
+      userId: user.id,
+      timeout: JOB_DEFUALTS.timeout,
+      isActive: JOB_DEFUALTS.isActive,
+      description: JOB_DEFUALTS.description,
+      maxRetries: JOB_DEFUALTS.maxRetries,
+      retryDelay: JOB_DEFUALTS.retryDelay,
+      httpBody: JOB_DEFUALTS.httpBody,
+      httpHeader: JOB_DEFUALTS.httpHeader,
+    };
+    const job = await createJobTest(user.id, jobEntity);
+    const stale = await executionRepo.create({
+      jobId: job!.id,
+      status: "running",
+      startedAt: new Date(Date.now() - 20 * 60 * 1000),
+      completedAt: null,
+      duration: null,
+      statusCode: null,
+      error: null,
+      response: null,
+    });
+    const fresh = await executionRepo.create({
+      jobId: job!.id,
+      status: "running",
+      startedAt: new Date(),
+      completedAt: null,
+      duration: null,
+      statusCode: null,
+      error: null,
+      response: null,
+    });
+
+    //Act
+    const swept = await executionRepo.markStaleRunning(
+      new Date(Date.now() - 15 * 60 * 1000),
+      "stale running — worker died before terminal write",
+    );
+
+    //Assert: only the orphan is closed, with the sweep's own words and the
+    //statusCode-0 sentinel (D-12) — duration stays null, unknowable
+    expect(swept.map((row) => row.id)).toEqual([stale!.id]);
+    const [staleRow] = await db
+      .select()
+      .from(Execution)
+      .where(eq(Execution.id, stale!.id));
+    expect(staleRow).toMatchObject({
+      status: "failed",
+      statusCode: 0,
+      error: "stale running — worker died before terminal write",
+      duration: null,
+    });
+    expect(staleRow?.completedAt).toBeInstanceOf(Date);
+
+    const [freshRow] = await db
+      .select()
+      .from(Execution)
+      .where(eq(Execution.id, fresh!.id));
+    expect(freshRow?.status).toBe("running");
+    expect(freshRow?.error).toBeNull();
   });
 });
