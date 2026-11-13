@@ -11,6 +11,25 @@ import {
   httpFetchDuration,
   executionDuration,
 } from "../../shared/lib/metrics.service.js";
+
+//Fetch error taxonomy (D-12 companion). Node's fetch collapses every fault
+//into one generic message ("fetch failed", 1579 identical rows and counting)
+//— the discriminating reason lives one level down: on error.cause.code
+//(ENOTFOUND = dead domain, ECONNREFUSED = nothing listening, EAI_AGAIN =
+//DNS flap) or on a TimeoutError name for the job's own timeout wall. The
+//cause is appended in parentheses so execution rows can separate "target
+//unreachable" from "target slow" without a schema change or new columns.
+export function describeFetchError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  const name = (error as { name?: string } | undefined)?.name;
+  if (name === "TimeoutError") {
+    return `${message} (timeout)`;
+  }
+  const code = (error as { cause?: { code?: string } } | undefined)?.cause
+    ?.code;
+  return code ? `${message} (${code})` : message;
+}
+
 export class ScheduleWorker {
   private worker: Worker;
   private connection: Redis;
@@ -338,9 +357,7 @@ export class ScheduleWorker {
       executionCounter.labels("failed").inc();
 
       //Errors including timeout , network errors and unforseen errors
-
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = describeFetchError(error);
 
       //   Record execution result failed after total attempts
       const maxAttempts = job?.opts.attempts;

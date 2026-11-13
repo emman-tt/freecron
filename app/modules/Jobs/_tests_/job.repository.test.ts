@@ -82,7 +82,7 @@ describe("Job repository integration test", () => {
       new Date("2026-09-22T06:30:00.000Z"),
       null,
     );
-    const [updated] = await jobRepo.update(created?.id as number, {});
+    const updated = await jobRepo.update(created?.id as number, {});
     const [result] = await db
       .select()
       .from(Job)
@@ -130,7 +130,7 @@ describe("Job repository integration test", () => {
       new Date("2026-09-22T06:30:00.000Z"),
       null,
     );
-    const [updated] = await jobRepo.update(created?.id as number, updateObject);
+    const updated = await jobRepo.update(created?.id as number, updateObject);
     const [result] = await db
       .select()
       .from(Job)

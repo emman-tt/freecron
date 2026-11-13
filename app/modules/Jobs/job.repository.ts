@@ -87,7 +87,7 @@ export class JobRespository {
 
   async delete(id: number) {
     const [deleted] = await db.delete(Job).where(eq(Job.id, id)).returning();
-    return deleted
+    return deleted;
   }
 
   async updateRunTimes(id: number, lastRunAt: Date, nextRunAt: Date) {
@@ -114,10 +114,11 @@ export class JobRespository {
       }
     }
     if (!length) {
-      return await db.select().from(Job).where(eq(Job.id, id));
+      const [existingJob] = await db.select().from(Job).where(eq(Job.id, id));
+      return existingJob;
     }
 
-    const updatedJob = await db
+    const [updatedJob] = await db
       .update(Job)
       .set(updateData)
       .where(eq(Job.id, id))

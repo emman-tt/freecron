@@ -6,7 +6,7 @@ import express, {
   type Response,
 } from "express";
 import "./database/db.config.js";
-import { worker, scheduler, closeInfra, scheduleQueue } from "./infra.js";
+import { worker, scheduler, closeInfra, scheduleQueue, NotifQueue, checkInfra } from "./infra.js";
 import { JobRouter } from "./modules/Jobs/job.routes.js";
 import { ExecutionRouter } from "./modules/Execution/execution.route.js";
 import { NotificationRouter } from "./modules/Notification/notification.routes.js";
@@ -44,6 +44,33 @@ app.use("/api/users", requestLogger, authMiddleware, UserRouter);
 app.use(errorHandler);
 
 if (process.env.NODE_ENV !== "test") {
+  boot();
+}
+
+//Startup guard: refuse to serve against dead infra — one fatal line instead
+//of an unthrottled reconnect storm. Exits 1 so the shell/dev runner surfaces it.
+async function boot(): Promise<void> {
+  try {
+    await checkInfra();
+    infraLogger.info(
+      {
+        filename: "index.ts",
+        functionname: "index.boot",
+      },
+      "infra reachable — postgres and redis up",
+    );
+  } catch (error) {
+    infraLogger.fatal(
+      {
+        error: String(error),
+        filename: "index.ts",
+        functionname: "index.boot",
+      },
+      "infra unreachable — start the compose stack (docker compose up -d) and retry",
+    );
+    process.exit(1);
+  }
+
   const server = app.listen(PORT, () => {
     infraLogger.info(
       {
@@ -65,7 +92,7 @@ if (process.env.NODE_ENV !== "test") {
     for (const [state, count] of Object.entries(executionCount)) {
       queueDepth.labels("execution", state).set(Number(count));
     }
-    const notificationCount = await scheduleQueue.getQueue().getJobCounts();
+    const notificationCount = await NotifQueue.getQueue().getJobCounts();
     for (const [state, count] of Object.entries(notificationCount)) {
       queueDepth.labels("notification", state).set(Number(count));
     }

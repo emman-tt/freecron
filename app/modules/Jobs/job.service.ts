@@ -362,12 +362,12 @@ export class JobService {
     }
 
     // Update database with the upcoming user DTO and system calculates
-    await this.jobRepo.update(jobId, updateDTO);
+    const updatedJob = (await this.jobRepo.update(jobId, updateDTO)) as Job;
 
     //invalidate every cache both for one job and all jobs
     this.invalidateCache(jobId, userId);
 
-    return this.toResponseDTO(jobEntity);
+    return this.toResponseDTO(updatedJob);
   }
   async updateRunTimes(
     jobId: number,

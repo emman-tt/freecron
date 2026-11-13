@@ -20,10 +20,18 @@ import { UserController } from "./modules/Users/user.controller.js";
 import { NotificationController } from "./modules/Notification/notification.controller.js";
 import { NotificationQueue } from "./modules/Notification/notification.queue.js";
 import { ScheduleWorker } from "./modules/Scheduler/schedular.worker.js";
+import { pingDb } from "./database/db.config.js";
 
-const cacheRepo = new SharedCacheRepository(RedisConnection());
-const scheduleQueue = new ScheduleQueue(RedisConnection());
-const NotifQueue = new NotificationQueue(RedisConnection());
+//Composition-root connections: hoisted so checkInfra() can probe them
+//before boot commits to listening (startup guard)
+const cacheRedis = RedisConnection();
+const scheduleRedis = RedisConnection();
+const notifRedis = RedisConnection();
+const workerRedis = RedisConnection();
+
+const cacheRepo = new SharedCacheRepository(cacheRedis);
+const scheduleQueue = new ScheduleQueue(scheduleRedis);
+const NotifQueue = new NotificationQueue(notifRedis);
 const scheduler = new SchedularService(scheduleQueue, cronManager, jobRepo);
 const jobService = new JobService(jobRepo, cronManager, cacheRepo, scheduler);
 const executionService = new ExecutionService(executionRepo, jobService);
@@ -39,7 +47,7 @@ const executionController = new ExecutionController(executionService);
 const notificationController = new NotificationController(notificationService);
 const userController = new UserController(userService);
 const worker = new ScheduleWorker(
-  RedisConnection(),
+  workerRedis,
   jobService,
   executionService,
   notificationService,
@@ -53,11 +61,18 @@ export {
   notificationService,
   worker,
   scheduleQueue,
+  NotifQueue,
   jobController,
   executionController,
   notificationController,
   userController,
 };
+
+//Startup guard: fail fast when Postgres or Redis are unreachable (dead
+//compose stack) instead of binding the server into a storm of reconnects
+export async function checkInfra() {
+  await Promise.all([scheduleRedis.ping(), pingDb()]);
+}
 
 //Closes every connection handle this module opened — used for clean
 //shutdown and jest teardown so the process can exit without forceExit
