@@ -36,9 +36,8 @@ export function DashboardPage() {
               <div
                 key={j.id}
                 onClick={() => setSelected(j.id)}
-                className={`flex cursor-pointer items-center gap-2.5 rounded-[14px] p-3 ${
-                  j.id === currentId ? "bg-muted-bg" : "hover:bg-muted-bg"
-                }`}
+                className={`flex cursor-pointer items-center gap-2.5 rounded-[14px] p-3 ${j.id === currentId ? "bg-muted-bg" : "hover:bg-muted-bg"
+                  }`}
               >
                 <span
                   className={`h-2 w-2 rounded-full ${j.isActive ? "bg-success" : "bg-border"}`}
@@ -84,7 +83,7 @@ export function DashboardPage() {
                 <p className="text-[15px] font-semibold">Url</p>
                 <p className="text-[13px] text-muted">{d.httpCommand}</p>
               </div>
-              {Object.keys(d.httpHeader).length > 0 && (
+              {d.id !== undefined && Object.keys(d?.httpHeader).length > 0 && (
                 <div>
                   <p className="text-[15px] font-semibold">Headers</p>
                   {Object.entries(d.httpHeader).map(([name, value]) => (

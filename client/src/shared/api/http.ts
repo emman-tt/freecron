@@ -18,7 +18,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   const json = await res.json();
   if (!res.ok) throw new ApiError(res.status, json.message ?? "Request failed");
-  return json.data as T;
+  return json as T;
 }
 
 export const http = {

@@ -12,11 +12,11 @@ export function useJobs(filters: JobFilters, page: number) {
   });
 }
 
-export function useJob(jobId: number, enabled = true) {
+export function useJob(jobId: number) {
   return useQuery({
     queryKey: ["job", String(jobId)],
     queryFn: () => jobApi.get(jobId),
-    enabled,
+    // enabled,
   });
 }
 
