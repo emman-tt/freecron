@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+/* Design tokens straight from the FreeCron design system ("human, minimal,
+calm" — black & white base, plain words). Every color below is a variable
+from the .pen file; components must use these, never hardcoded hexes */
+@theme {
+  --color-bg: #f7f7f6;
+  --color-card: #ffffff;
+  --color-primary: #0a0a0a;
+  --color-muted: #737373;
+  --color-muted-bg: #f5f5f4;
+  --color-border: #e7e5e4;
+  --color-success: #16a34a;
+  --color-warning: #a16207;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fef2f2;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --radius-card: 20px;
+  --radius-control: 12px;
+  --radius-field: 10px;
+}
+
+body {
+  @apply bg-bg font-sans text-[#0a0a0a] antialiased;
+}

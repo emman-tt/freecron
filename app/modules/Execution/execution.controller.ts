@@ -24,7 +24,7 @@ export class ExecutionController {
         jobId: z.coerce
           .number("job id is required")
           .int("job id should be valid number")
-          .positive("job id should be positive"),
+          .min(0, "Job is should be positive"),
         page: z.coerce.number().int().min(1).default(DEFAULT_PAGE),
         limit: z.coerce
           .number()
@@ -36,7 +36,7 @@ export class ExecutionController {
 
       const check = schema.safeParse(req.query);
       if (!check.success) {
-        const formatted = z.treeifyError(check.error);
+        const formatted = z.prettifyError(check.error);
         throw new ValidationError(`${formatted}`);
       }
 

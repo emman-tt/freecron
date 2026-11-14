@@ -21,7 +21,6 @@ export class UserController {
       next(error);
     }
   }
-  
 
   async update(req: Request, res: Response, next: NextFunction) {
     try {
@@ -37,7 +36,7 @@ export class UserController {
 
       const bodyCheck = bodySchema.safeParse(req.body);
       if (!bodyCheck.success) {
-        const formatted = z.treeifyError(bodyCheck.error);
+        const formatted = z.prettifyError(bodyCheck.error);
         throw new ValidationError(`${formatted}`);
       }
 

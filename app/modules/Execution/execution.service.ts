@@ -181,6 +181,7 @@ export class ExecutionService {
       duration: data.duration,
       statusCode: data.statusCode,
       error: data.error,
+      response: data.response,
     };
   }
 }

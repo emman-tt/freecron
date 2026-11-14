@@ -42,5 +42,8 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
-  }
+  },
+  //client/ is its own TS project (Vite, bundler resolution) — never build it
+  //from the Node backend config
+  "exclude": ["client", "dist", "node_modules"],
 }

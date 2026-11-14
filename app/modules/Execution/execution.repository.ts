@@ -3,11 +3,7 @@ import { Execution } from "../../database/db.schema.js";
 import type { Execution as ExecutionType } from "../../shared/types/entities.js";
 import { and, count, desc, eq, lt } from "drizzle-orm";
 import type { updateDTO } from "./execution.types.js";
-//Stale-running sweep constants. A legit execution cannot outlive
-//attempts × timeout + backoffs (≈3 min, D-9) — anything "running" older
-//than the window is an orphan of a process that died mid-run (sleep,
-//force-kill, crash), which BullMQ stall recovery cannot close once the
-//queue entry is gone. 15 min leaves a wide margin over the theoretical max
+
 export const STALE_RUNNING_WINDOW_MS = 15 * 60 * 1000;
 export const STALE_RUNNING_ERROR =
   "stale running — worker died before terminal write";
@@ -76,11 +72,7 @@ export class ExecutionRespository {
   //   //Aggregation and maths calculations in future
   // }
 
-  //Stale-running sweep (D-15): rows whose worker died before the terminal
-  //write stay "running" forever — single-process means BullMQ stall recovery
-  //has no peer to reclaim through, and the queue entry is gone by next boot.
-  //Duration is left null: the run never finished, so its real duration is
-  //unknowable — do not fabricate it
+
   async markStaleRunning(cutoff: Date, error: string) {
     return await db
       .update(Execution)

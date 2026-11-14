@@ -28,6 +28,13 @@ export interface jobResponseDTO {
   cronExpression: string;
   httpCommand: string;
   httpMethod: string;
+  //Added for the client: the Edit form and Overview card render headers,
+  //payload and timeout, which the original DTO kept server-side only
+  httpHeader: Record<string, string>;
+  httpBody: Record<string, unknown>;
+  timeout: number;
+  maxRetries: number;
+  retryDelay: number;
   isActive: boolean;
   lastRunAt: Date | null;
   nextRunAt: Date;

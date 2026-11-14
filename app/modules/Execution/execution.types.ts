@@ -7,7 +7,9 @@ export interface userResponseDTO {
   duration: number | null;
   statusCode: number | null;
   error: string | null;
-  // response: Record<string, unknown>;
+  //Added for the client: the Logs screen's Output box and the execution
+  //detail modal render the stored response (headers + body)
+  response: Record<string, unknown> | null;
 }
 
 export interface queueResponse {

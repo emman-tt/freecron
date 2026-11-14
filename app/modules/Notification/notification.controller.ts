@@ -62,7 +62,7 @@ export class NotificationController {
 
       const check = bodySchema.safeParse(req.body);
       if (!check.success) {
-        const formatted = z.treeifyError(check.error);
+        const formatted = z.prettifyError(check.error);
         throw new ValidationError(`${formatted}`);
       }
 
@@ -90,7 +90,7 @@ export class NotificationController {
     try {
       const paramsCheck = paramsSchema.safeParse(req.params);
       if (!paramsCheck.success) {
-        const formatted = z.treeifyError(paramsCheck.error);
+        const formatted = z.prettifyError(paramsCheck.error);
         throw new ValidationError(`${formatted}`);
       }
 
@@ -132,7 +132,7 @@ export class NotificationController {
 
       const check = schema.safeParse(req.query);
       if (!check.success) {
-        const formatted = z.treeifyError(check.error);
+        const formatted = z.prettifyError(check.error);
         throw new ValidationError(`${formatted}`);
       }
 
@@ -161,7 +161,7 @@ export class NotificationController {
     try {
       const paramsCheck = paramsSchema.safeParse(req.params);
       if (!paramsCheck.success) {
-        const formatted = z.treeifyError(paramsCheck.error);
+        const formatted = z.prettifyError(paramsCheck.error);
         throw new ValidationError(`${formatted}`);
       }
 
@@ -188,7 +188,7 @@ export class NotificationController {
     try {
       const paramsCheck = paramsSchema.safeParse(req.params);
       if (!paramsCheck.success) {
-        const formatted = z.treeifyError(paramsCheck.error);
+        const formatted = z.prettifyError(paramsCheck.error);
         throw new ValidationError(`${formatted}`);
       }
 
@@ -222,7 +222,7 @@ export class NotificationController {
 
       const bodyCheck = bodySchema.safeParse(req.body);
       if (!bodyCheck.success) {
-        const formatted = z.treeifyError(bodyCheck.error);
+        const formatted = z.prettifyError(bodyCheck.error);
         throw new ValidationError(`${formatted}`);
       }
 
@@ -250,7 +250,7 @@ export class NotificationController {
     try {
       const paramsCheck = paramsSchema.safeParse(req.params);
       if (!paramsCheck.success) {
-        const formatted = z.treeifyError(paramsCheck.error);
+        const formatted = z.prettifyError(paramsCheck.error);
         throw new ValidationError(`${formatted}`);
       }
 

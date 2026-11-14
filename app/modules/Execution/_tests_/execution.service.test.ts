@@ -42,6 +42,7 @@ describe("Execution Service", () => {
     duration: executionEntity.duration,
     statusCode: executionEntity.statusCode,
     error: executionEntity.error,
+    response: executionEntity.response,
   };
 
   const jobEntity: Job = {
