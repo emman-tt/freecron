@@ -1,6 +1,4 @@
-//Job hooks — every query and mutation for jobs lives here, so pages compose
-//hooks and components stay presentational. All mutations share one
-//invalidation: the jobs lists and any open job detail
+//Job hooks — queries + mutations; mutations invalidate ["jobs"] + ["job"]
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { jobApi } from "../api/job.api";
 import type { CreateJobDTO, JobFilters, UpdateJobDTO } from "../api/job.types";
@@ -12,8 +10,7 @@ export function useJobs(filters: JobFilters, page: number) {
   });
 }
 
-//Dashboard stat-card aggregates (GET /api/jobs/stats). Key nests under
-//["jobs"] so every job mutation's invalidation refreshes it too
+//Dashboard stat-card aggregates (GET /api/jobs/stats); nests under ["jobs"]
 export function useJobStats() {
   return useQuery({
     queryKey: ["jobs", "stats"],
@@ -47,7 +44,7 @@ export function useToggleJob() {
   });
 }
 
-//POST /:jobId — run now, priority-1 BullMQ job; executions change too
+//POST /:jobId — run now; executions change too
 export function useRunNow() {
   const invalidate = useInvalidateJobs();
   const queryClient = useQueryClient();
@@ -68,8 +65,7 @@ export function useDeleteJob() {
   });
 }
 
-//POST (create) or PUT (edit) — the form calls this after its own client-side
-//validation, which mirrors the backend's Zod messages verbatim
+//POST (create) or PUT (edit)
 export function useSaveJob(jobId?: number) {
   const invalidate = useInvalidateJobs();
   return useMutation({

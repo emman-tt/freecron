@@ -1,7 +1,5 @@
-//Executions table — the Logs tab (design "RU Logs"): title line with the
-//endpoint + showing range, 14px status dots, START TIME / TIME / SIZE
-//columns, "View ▾" opening the Output box (statusCode line + stored response),
-//and ‹‹ ‹ 1 2 3 … › ›› pagination. Local state only: page + which row is open
+//Logs tab (design "RU Logs"): status dots, verbose start times, View ▾
+//output box, numbered pagination
 import { Fragment, useState } from "react";
 import { useExecutions } from "../hooks/execution.hooks";
 import type { Execution } from "../api/execution.types";
@@ -61,8 +59,7 @@ export function ExecutionsTable({ jobId }: { jobId: number }) {
       <p className="text-[13px] font-bold text-[#0a0a0a]">
         Logs  •  GET /api/executions?jobId={jobId}  •  Showing {shown}
       </p>
-      {/*table-fixed + col widths: the verbose timestamps must never stretch
-      the page — they wrap inside their column instead*/}
+      {/*table-fixed so long timestamps wrap, never stretch the page*/}
       <div className="overflow-x-auto">
         <table className="w-full table-fixed text-left">
           <colgroup>

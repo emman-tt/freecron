@@ -1,6 +1,5 @@
-//Notifications page — every alert rule the user owns, grouped per job.
-//The backend only exposes rules per job, so the hooks fan out over the
-//jobs list; this page composes and shows
+//Notifications page — alert rules grouped per job (the API is per-job, so
+//the hooks fan out over the jobs list)
 import { useJobs } from "../jobs/hooks/job.hooks";
 import { useAllRules, useToggleRule } from "./hooks/notification.hooks";
 import { RulesCard } from "./components/rules-card";

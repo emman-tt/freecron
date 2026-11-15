@@ -1,3 +1,5 @@
+//App-wide HTTP — unwraps the backend envelope {status, data, meta?};
+//raw=true returns the whole body (better-auth endpoints bypass the envelope)
 export class ApiError extends Error {
   readonly status: number;
   constructor(status: number, message: string) {

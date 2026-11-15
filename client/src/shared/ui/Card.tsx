@@ -1,5 +1,4 @@
-//Card = white rounded surface from the design system (R20, borderless —
-//the design uses plain white cards on the #F7F7F6 canvas, no strokes)
+//White borderless R20 card from the design system
 export function Card({
   className,
   ...props

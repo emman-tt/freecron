@@ -1,5 +1,4 @@
-//Cron preview, mirroring the backend's CronService (same cron-parser major).
-//"Next run: Today at 02:00 · in 6h 12m · Valid cron" lives on this
+//Cron preview — mirrors the backend's CronService wording
 import { CronExpressionParser } from "cron-parser";
 
 export function describeCron(expr: string): string | null {

@@ -1,10 +1,8 @@
 //Notification hooks — rules are per-job on the API, so everything fans out
-//from jobId. Used by the job form's section and the global rules page
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { notificationApi } from "../api/notification.api";
 import type { CreateNotificationDTO } from "../api/notification.types";
 
-//Rules for ONE job (the Edit form's section)
 export function useJobRules(jobId: number) {
   return useQuery({
     queryKey: ["notifications", jobId],
@@ -12,8 +10,7 @@ export function useJobRules(jobId: number) {
   });
 }
 
-//Rules for EVERY job — the API requires a jobId per call, so this fans out
-//over the user's jobs and labels each group with the job name
+//fan out over jobs, labeling each group with the job name
 export function useAllRules(jobIds: number[], nameOf: (jobId: number) => string) {
   return useQuery({
     queryKey: ["notifications-all", jobIds],

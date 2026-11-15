@@ -18,14 +18,13 @@ import { Toggle } from "../../shared/ui/Toggle";
 import { mask } from "../../shared/lib/format";
 import { describeCron } from "../../shared/lib/cron";
 
-//Status vocabulary per design: "Running well / Paused / Needs care"
-const statusVocab = (isActive: boolean, hasFailures: boolean) => {
+//Running well / Paused / Needs care
+const statusVocab = (isActive: boolean) => {
   if (!isActive) return "Paused";
-  if (hasFailures) return "Needs care";
   return "Running well";
 };
 
-//"Next run in 6h 12m" — relative countdown for the job name value line
+//"Next run in 6h 12m"
 const relTime = (iso?: string) => {
   if (!iso) return "—";
   const ms = new Date(iso).getTime() - Date.now();
@@ -37,7 +36,7 @@ const relTime = (iso?: string) => {
 };
 
 export function DashboardPage() {
-  const { rows, stats, currentStats, detail: d, recent, currentId, setSelected, toggle } = useDashboard();
+  const { rows, stats, detail: d, recent, currentId, setSelected, toggle } = useDashboard();
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "paused">("all");
   const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
@@ -47,22 +46,17 @@ export function DashboardPage() {
     void queryClient.invalidateQueries({ queryKey: ["executions"] });
   };
 
-  //Status filter + search run client-side over the loaded rows (no backend)
+  //client-side over the loaded rows
   const visible = rows.filter(
     (j) =>
       (statusFilter === "all" ||
         (statusFilter === "active" ? j.isActive : !j.isActive)) &&
       j.name.toLowerCase().includes(search.toLowerCase()),
   );
-  //"Needs care" reads the selected job's FINAL outcome from its stats
-  //(all-time), not the latest page of runs
-  const failing =
-    currentStats?.lastStatus === "failed" || currentStats?.lastStatus === "timeout";
-  const statusLabel = d ? statusVocab(d.isActive, failing) : "";
+  const statusLabel = d ? statusVocab(d.isActive) : "";
   const cronDesc = describeCron(d?.cronExpression ?? "");
   const cronDisplay = cronDesc ? cronDesc.replace("Next run: ", "") : "";
 
-  //Stat Sub lines — only what the API can prove
   const totalSub =
     stats && stats.createdThisWeek > 0
       ? `+${stats.createdThisWeek} this week`
@@ -76,7 +70,7 @@ export function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-4 bg-bg min-h-screen">
-      {/*TopBar: title + bell + avatar + profile per design*/}
+      {/*TopBar*/}
       <div className="flex items-center gap-3">
         <h1 className="text-[28px] font-bold text-[#0a0a0a]">Overview</h1>
         <div className="flex-1" />
@@ -85,7 +79,7 @@ export function DashboardPage() {
         <span className="text-[14px] text-[#0a0a0a]">Profile&ensp;▾</span>
       </div>
 
-      {/*Toolbar: add, refresh — then status + date filters on the right*/}
+      {/*Toolbar*/}
       <div className="flex items-center gap-3">
         <Link
           to="/jobs/new"
@@ -148,7 +142,7 @@ export function DashboardPage() {
         />
       </div>
 
-      {/*Design Content Row: Job List 360 : Details 760 (gap 16)*/}
+      {/*Job list 360 : Details 760*/}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[360fr_760fr]">
         <Card className="flex flex-col gap-3 p-5">
           <div className="flex items-center gap-2.5">
@@ -201,7 +195,7 @@ export function DashboardPage() {
                 </p>
               </div>
 
-              {/*Schedule bar: cron + human words on #F5F5F4, R12*/}
+              {/*cron + human words*/}
               <div className="flex flex-col gap-1 rounded-control bg-muted-bg p-3">
                 <span className="font-mono text-[14px] font-bold text-[#0a0a0a]">
                   {d.cronExpression}

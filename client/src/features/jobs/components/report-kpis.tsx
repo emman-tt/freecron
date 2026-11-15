@@ -1,15 +1,10 @@
-//Report KPIs — design: one white R16 card, six stats (15/700 value over an
-//11px muted label): Last failure (design called it "Down time" — renamed
-//because it's a date anchor, not a duration), Average, Uptime, Lowest,
-//Highest, Status. Numbers come from GET /api/executions/stats — exact
-//aggregates over ALL history of the job, not the loaded page. Each label
-//carries an info icon with a plain-English hover tooltip. The chart beside
-//it stays a page-1 series (visual, not a claim)
+//Report KPIs — server aggregates over ALL history (GET /api/executions/stats)
+//with hover tooltips. "Last failure" = the design's "Down time", renamed for
+//clarity. The chart beside it stays a page-1 series (visual, not a claim)
 import { Info } from "lucide-react";
 import type { ExecutionStats } from "../../executions/api/execution.types";
 import { dayLabel, durationLabel } from "../../../shared/lib/format";
 
-//One tooltip per KPI — plain-English definitions, same voice as the UI copy
 const TIPS: Record<string, string> = {
   "Last failure":
     "When the most recent run ended failed or timed out. “None” means this job has never had a failed run.",
@@ -33,11 +28,7 @@ export function ReportKPIs({
   //truth about the job is "switched off", so Paused (yellow) overrides
   jobActive?: boolean;
 }) {
-  //fmt = durationLabel — same human format the chart tooltips use, so KPI
-  //values like 86492.47s render as "24h 1m"
-
-  //Status value carries its color: green Up · blue Running · red Down ·
-  //yellow Paused — the same dot vocabulary the rest of the app uses
+  //green Up · blue Running · red Down · yellow Paused
   const paused = jobActive === false;
   const status = paused
     ? "Paused"

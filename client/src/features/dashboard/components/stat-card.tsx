@@ -1,6 +1,4 @@
-//Stat card — design: borderless white R18 card, p-16 / gap-6; muted 12/500
-//label, 24/700 value, and a tiny 12px "Stat Sub" info line under the value
-//("+2 this week", "75% healthy", …). Presentational
+//Stat card — borderless R18: muted label, 24px value, tiny sub line
 import { Info } from "lucide-react";
 
 export function StatCard({
@@ -12,8 +10,7 @@ export function StatCard({
   label: string;
   value: number | string;
   sub?: string;
-  //hover explainer — plain-English definition of the number (shaped like the
-  //tooltip on the report KPIs)
+  //hover explainer, shaped like the report KPI tooltips
   tip?: string;
 }) {
   return (

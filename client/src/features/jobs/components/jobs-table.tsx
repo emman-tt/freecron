@@ -1,6 +1,5 @@
-//Jobs table — the designed grid: status dot, name/website, cron, method
-//chip, toggle, last→next, and the four row verbs (▶ ⏸ ✎ 🗑).
-//Presentational: rows and callbacks come in, no queries inside
+//Jobs table — status dot, name/website, cron, method chip, toggle,
+//last→next, row verbs. Presentational
 import { Link } from "react-router";
 import { Play, Pause, Pencil, Trash2 } from "lucide-react";
 import type { Job } from "../api/job.types";

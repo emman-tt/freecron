@@ -1,7 +1,5 @@
-//Scheduled hooks — projects every active job's cron forward over the next
-//week (same cron-parser major as the backend). The BullMQ delayed queue
-//itself is not exposed over HTTP, so this is a preview of what the
-//scheduler WILL queue, not a queue dump
+//Scheduled hooks — projects every active job's cron over the next week
+//(the BullMQ queue isn't exposed over HTTP, this is a preview)
 import { useMemo } from "react";
 import { CronExpressionParser } from "cron-parser";
 import { useJobs } from "../../jobs/hooks/job.hooks";

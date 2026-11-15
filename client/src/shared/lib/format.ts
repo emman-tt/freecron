@@ -25,9 +25,7 @@ export function hm(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
-//Human duration: "20ms" under a second, "0.34s" to the minute, "6m 05s" and
-//"24h 1m" beyond — chart tooltips and report KPIs share this so raw values
-//like 86492.47s never reach the user
+//Human duration: "20ms" / "0.34s" / "6m 05s" / "24h 1m"
 export function durationLabel(ms: number | null | undefined): string {
   if (ms == null) return "—";
   if (ms < 1000) return `${Math.round(ms)}ms`;

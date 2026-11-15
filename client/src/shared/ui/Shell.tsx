@@ -1,10 +1,6 @@
-//App shell: fixed sidebar (design: 248px, logo, nav) + rounded main area on
-//the bg color. Nav paths mirror the lifecycle map's stage names.
-//Design nav: R14 items, 12/14 padding, icon 18; active = #F5F5F4 + 600 weight.
-//Additions beyond the design: a real-data count chip on Jobs (totalJobs from
-//the jobs/stats aggregate) and a session user card with sign-out pinned to
-//the bottom. (Notifications chip deferred — rules need N per-job calls until
-//a count endpoint exists)
+//App shell: sticky sidebar + rounded main area. Count chips and the user
+//card are honest-data additions beyond the design (Notifications chip waits
+//for a count endpoint — rules need N per-job calls)
 import { NavLink, Outlet, useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -28,7 +24,7 @@ const items = [
 export function Shell() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  //session is already cached by the auth gate — no extra request
+  //session is cached by the auth gate
   const session = useSession();
   const stats = useJobStats();
   const user = session.data?.user;
@@ -42,12 +38,13 @@ export function Shell() {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="flex w-60 shrink-0 flex-col gap-8 bg-card p-5 pt-8">
+      {/*sticky + h-screen: stays in view while main scrolls*/}
+      <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col gap-8 bg-card p-5 pt-8">
         <div className="flex items-center gap-2">
           <span className="h-7 w-7 rounded-full bg-primary" />
           <span className="text-[20px] font-bold text-[#0a0a0a]">FreeCron</span>
         </div>
-        <nav className="flex flex-1 flex-col gap-1.5">
+        <nav className="flex flex-1 flex-col gap-1.5 overflow-y-auto">
           {items.map(({ to, label, icon: Icon, ...rest }, i) => (
             <NavLink
               key={to}
@@ -65,8 +62,7 @@ export function Shell() {
                 <>
                   <Icon size={18} />
                   {label}
-                  {/*count chip — real data only; Jobs carries the job total.
-                  Layered: white chip on the filled active row, muted on idle*/}
+                  {/*white chip on the filled active row, muted on idle*/}
                   {i === 1 &&
                     stats.data?.totalJobs !== undefined &&
                     stats.data.totalJobs > 0 && (
@@ -84,7 +80,7 @@ export function Shell() {
           ))}
         </nav>
 
-        {/*User card — name + email from the session, real sign out*/}
+        {/*name + email from the session, real sign out*/}
         <div className="flex items-center gap-2.5 rounded-[14px] p-2.5 transition-colors hover:bg-muted-bg/60">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-[13px] font-bold text-white">
             {user?.name?.[0]?.toUpperCase() ?? "—"}

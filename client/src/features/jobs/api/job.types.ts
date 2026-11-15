@@ -1,6 +1,4 @@
 //Mirror of app/modules/Jobs/job.types.ts — field names must match the API
-//exactly; UI copy on top of them follows the design system's Language Map
-//"say this, not that" (labels say "Website to call", code says httpCommand)
 export type HttpMethod = "POST" | "GET" | "PATCH" | "PUT" | "DELETE";
 
 export interface Job {
@@ -38,12 +36,11 @@ export interface CreateJobDTO {
 
 export type UpdateJobDTO = Partial<CreateJobDTO> & { isActive?: boolean };
 
-//Mirror of JobStatsDTO — one aggregate call for the dashboard stat cards
 export interface JobStats {
   totalJobs: number;
   activeJobs: number;
   pausedJobs: number;
-  //jobs created in the trailing 7 days — drives the "+N this week" sub
+  //jobs created in the trailing 7 days
   createdThisWeek: number;
   failedRuns: number;
   avgRuntimeMs: number | null;

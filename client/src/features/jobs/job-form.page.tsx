@@ -1,11 +1,6 @@
-//Job form — one page, two designed layouts:
-//  Add  (ENORC): stacked fields + save
-//  Edit (P2m1Ji): back + Active pill, lifecycle bar, Run now,
-//               Danger zone (Clone/Delete)
-//Timeout/retries are infra rules — owned by the backend defaults, never edited here.
-//Labels follow the design's hybrid style: human words + field name in parens.
-//Client-side validation mirrors the backend's Zod messages so the user never
-//hits a server round-trip to learn "Invalid cron format for scheduling"
+//Job form — Add (ENORC) and Edit (P2m1Ji) layouts. Timeout/retries are
+//backend-owned infra rules, never edited here. Client-side validation mirrors
+//the backend's Zod messages so users never round-trip to learn them
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Clock } from "lucide-react";
@@ -16,25 +11,12 @@ import { KVRows } from "./components/kv-rows";
 import { NotificationsSection } from "./components/notifications-section";
 import { DeleteConfirm } from "./components/delete-confirm";
 import { describeCron, isValidCron } from "../../shared/lib/cron";
+import { hm, dayLabel } from "../../shared/lib/format";
 import { Button } from "../../shared/ui/Button";
 import { Field, Input } from "../../shared/ui/Input";
 import type { HttpMethod } from "./api/job.types";
 
 const httpMethods: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE"];
-
-//"02:00 Today" / "02:00 Yday" / "02:00 15 Nov" — lifecycle bar wording
-const hm = (iso: string) =>
-  new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-const dayLabel = (iso: string) => {
-  const dt = new Date(iso);
-  const now = new Date();
-  const yday = new Date(now);
-  yday.setDate(now.getDate() - 1);
-  const same = (a: Date, b: Date) => a.toDateString() === b.toDateString();
-  if (same(dt, now)) return "Today";
-  if (same(dt, yday)) return "Yday";
-  return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-};
 
 export function JobFormPage() {
   const { jobId } = useParams();
@@ -61,6 +43,7 @@ export function JobFormPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  //Prefill from the fetched job in edit mode
   useEffect(() => {
     const j = existing.data;
     if (!j) return;
@@ -77,7 +60,6 @@ export function JobFormPage() {
     setPayload(
       Object.entries(j.httpBody ?? {}).map(([key, value]) => ({
         key,
-        //Strings edit as-is; everything else shows its JSON form
         value: typeof value === "string" ? value : JSON.stringify(value),
       })),
     );
@@ -99,7 +81,6 @@ export function JobFormPage() {
 
   function submit(e: React.SubmitEvent) {
     e.preventDefault();
-    //Validate with the backend's words before spending a request
     const next: Record<string, string> = {};
     if (!form.name.trim()) next.name = "Required — min 1 char";
     if (!isValidCron(form.cronExpression))
@@ -122,7 +103,6 @@ export function JobFormPage() {
     });
   }
 
-  //"Clone job" — create a duplicate from the current form values
   function onClone() {
     clone.mutate(
       { ...buildPayload(), name: `${form.name || "Job"} (copy)` },
@@ -140,7 +120,6 @@ export function JobFormPage() {
     return <p className="text-[13px] text-muted">Loading job…</p>;
   }
 
-  //Shared field stack (both modes): name, description, cron, url, KV editors
   const fields = (
     <>
       <Field label="Job Name *" error={errors.name}>
@@ -178,7 +157,6 @@ export function JobFormPage() {
         )}
       </Field>
 
-      {/*Live preview — the design's green clock box, only when cron is valid*/}
       {preview && !editing && (
         <div className="flex items-center gap-3 rounded-field bg-muted-bg p-3">
           <Clock size={16} className="text-success" />
@@ -234,7 +212,6 @@ export function JobFormPage() {
     <div className="flex flex-col gap-4">
       {editing ? (
         <>
-          {/*Edit top: back + Active pill (click = toggle pause/resume)*/}
           <div className="flex items-center gap-3">
             <div onClick={() => navigate(-1)} className="text-[13px] text-muted hover:text-[#0a0a0a]">
               ←  <span className="text-[#0a0a0a]">{existing.data?.name ?? "…"}</span>  •  #{jobId}
@@ -255,7 +232,7 @@ export function JobFormPage() {
 
           <h1 className="text-[28px] font-bold text-[#0a0a0a]">Edit Job</h1>
 
-          {/*Lifecycle bar — Created needs a createdAt the API doesn't expose yet*/}
+          {/*Created shows "—" until the API exposes createdAt*/}
           <div className="flex items-center gap-2 rounded-[16px] bg-card p-4">
             <Step label="Created" sub="—" />
             <Step
@@ -330,7 +307,6 @@ export function JobFormPage() {
 
         {errors.form && <p className="text-[11px] text-danger">{errors.form}</p>}
 
-        {/*Actions — edit gets the design's hint + Run now + Save changes row*/}
         <div className="mt-2 flex items-center gap-2.5">
           {editing && (
             <span className="flex-1 text-[11px] text-muted">
@@ -359,7 +335,6 @@ export function JobFormPage() {
         </div>
       </form>
 
-      {/*Danger zone — edit only: Clone + Delete (deletes executions too)*/}
       {editing && (
         <div className="flex items-center gap-2.5 rounded-xl bg-[#FEF2F2] p-3.5">
           <p className="flex-1 text-[12px] text-[#FF2E2E]">
@@ -397,7 +372,6 @@ export function JobFormPage() {
   );
 }
 
-//One lifecycle-bar step: muted 11/600 label over a 12px sub line
 function Step({ label, sub }: { label: string; sub: string }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1">

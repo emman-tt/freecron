@@ -1,8 +1,4 @@
-//Status — always visible, always kind (design system). Green = healthy,
-//grey = paused by you, red = failed. Never blame; say what to do next
-
-//UI-level health, derived (never stored): isActive=false → paused,
-//recent failures → Needs care, otherwise Running well
+//UI-level health, derived (never stored)
 type Status = "healthy" | "paused" | "failing";
 
 const tone: Record<Status, string> = {

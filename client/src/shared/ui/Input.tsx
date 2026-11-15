@@ -1,5 +1,4 @@
-//Inputs — label, help, gentle errors (design system). The error state borrows
-//the backend's Zod messages verbatim: "That doesn't look like a link. Try https://…"
+//Inputs — label, help, gentle errors
 import { useId } from "react";
 
 export function Field({

@@ -1,6 +1,4 @@
-//Recent run cards — design: gray R12 cards, status dot + "02:08 Today" +
-//"200 • 1.1s". Presentational; used on the dashboard and the report's
-//"Latest executions" tab
+//Run cards — gray R12: status dot, "02:08 Today", "200 • 1.1s"
 import type { Execution } from "../api/execution.types";
 import { dayLabel, hm } from "../../../shared/lib/format";
 

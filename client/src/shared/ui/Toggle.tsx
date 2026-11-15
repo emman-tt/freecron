@@ -1,6 +1,4 @@
-//Toggle for pause/resume — the only Control verb (PATCH /jobs/:jobId).
-//Design: 32x18 track, white fill, 1.5 stroke (dark when on, #E7E5E4 when
-//off), 10px knob (#16A34A when on, grey when off)
+//Pause/resume toggle — 32×18 track, green knob when on
 export function Toggle({
   on,
   onChange,

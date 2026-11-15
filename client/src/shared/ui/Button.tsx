@@ -1,5 +1,4 @@
-//Buttons — one primary per view; destructive is red and separate (design system)
-//primary: dark R12 (p-12/18, 14/600) · secondary: white with border · danger: red
+//primary: dark R12 · secondary: white + border · danger: red
 type Variant = "primary" | "secondary" | "danger";
 
 const classes: Record<Variant, string> = {

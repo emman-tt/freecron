@@ -1,6 +1,5 @@
-//Job overview — the designed Details card (schedule bar with human cron,
-//headers table with masked values, dark payload box, recent runs) plus the
-//action row. Presentational: it renders the job and hands actions up
+//Job overview — the Details card (schedule bar, headers, payload, recent
+//runs) plus the action row. Presentational
 import { Link } from "react-router";
 import { describeCron } from "../../../shared/lib/cron";
 import { formatIn, mask } from "../../../shared/lib/format";

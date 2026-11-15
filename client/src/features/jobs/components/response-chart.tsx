@@ -1,15 +1,9 @@
-//Response times — design: white R16 card, dark bars (6px-rounded tops) on a
-//110px row, one per completed run, oldest → newest left to right.
-//Improvements over the bare design: failed runs are red, hovering shows the
-//exact duration + when it ran, the window is the last 30 completed runs, and
-//when one outlier would flatten everything (a run that waited out a server
-//restart counts the whole outage as runtime) the scale flips to logarithmic
-//with an honest "log scale" footnote
+//Response times — last 30 completed runs, oldest → newest. Failed runs red;
+//hover shows duration + when. Log scale when one outlier would flatten the rest
 import type { Execution } from "../../executions/api/execution.types";
 import { durationLabel, dayLabel, hm } from "../../../shared/lib/format";
 
 export function ResponseChart({ runs }: { runs: Execution[] }) {
-  //last 30 completed runs, oldest → newest; runs without a duration skipped
   const points = runs
     .filter((r) => r.duration !== null)
     .slice(0, 30)
@@ -17,8 +11,7 @@ export function ResponseChart({ runs }: { runs: Execution[] }) {
   const durations = points.map((r) => r.duration!);
   const max = Math.max(...durations, 1);
   const min = Math.min(...durations, max);
-  //log scale only when a single outlier would compress every other bar
-  //into invisibility
+  //log when an outlier (e.g. a run that waited out a server restart) flattens everything
   const log = max > min * 50;
 
   const height = (d: number): number => {
@@ -49,7 +42,6 @@ export function ResponseChart({ runs }: { runs: Execution[] }) {
               }`}
               style={{ height: `${height(r.duration!)}%` }}
             />
-            {/*hover explainer — exact value + when, so the bars never lie*/}
             <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-xl bg-[#0a0a0a] p-2 text-[11px] text-white shadow-lg group-hover:block">
               <span className="font-bold">{durationLabel(r.duration)}</span>
               <span className="text-white/60">
