@@ -121,18 +121,35 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        <StatCard label="Total Jobs" value={stats?.totalJobs ?? "…"} sub={totalSub} />
-        <StatCard label="Active" value={stats?.activeJobs ?? "…"} sub={activeSub} />
-        <StatCard label="Paused" value={stats?.pausedJobs ?? "…"} sub="Off until resumed" />
+        <StatCard
+          label="Total Jobs"
+          value={stats?.totalJobs ?? "…"}
+          sub={totalSub}
+          tip="Every cron job you own — active and paused together."
+        />
+        <StatCard
+          label="Active"
+          value={stats?.activeJobs ?? "…"}
+          sub={activeSub}
+          tip="Jobs currently switched on. They fire on their cron schedule. The sub shows what share of your total is healthy."
+        />
+        <StatCard
+          label="Paused"
+          value={stats?.pausedJobs ?? "…"}
+          sub="Off until resumed"
+          tip="Switched-off jobs. They don't fire at all until you resume them."
+        />
         <StatCard
           label="Failed"
           value={stats?.failedRuns ?? "…"}
           sub={stats ? (stats.failedRuns > 0 ? "All-time failures" : "None so far") : undefined}
+          tip="Fires that ended failed or timed out, across all history. A run that failed once but succeeded on retry does NOT count — only exhausted retries do."
         />
         <StatCard
           label="Avg Runtime"
           value={stats === undefined ? "…" : stats.avgRuntimeMs === null ? "—" : `${(stats.avgRuntimeMs / 1000).toFixed(2)}s`}
           sub="All-time average"
+          tip="Mean duration of every finished run. A run interrupted by a server restart counts the whole outage as runtime, so one outlier can pull this up."
         />
       </div>
 

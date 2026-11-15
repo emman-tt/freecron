@@ -74,7 +74,7 @@ export function JobDetailPage() {
             onRun={() => runNow.mutate(id, { onSuccess: () => setTab("Logs") })}
             onDelete={() => setConfirmDelete(true)}
           />
-          <ReportKPIs stats={stats.data} />
+          <ReportKPIs stats={stats.data} jobActive={j.isActive} />
           <ResponseChart runs={latest} />
         </div>
       )}
