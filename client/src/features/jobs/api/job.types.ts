@@ -37,3 +37,14 @@ export interface CreateJobDTO {
 }
 
 export type UpdateJobDTO = Partial<CreateJobDTO> & { isActive?: boolean };
+
+//Mirror of JobStatsDTO — one aggregate call for the dashboard stat cards
+export interface JobStats {
+  totalJobs: number;
+  activeJobs: number;
+  pausedJobs: number;
+  //jobs created in the trailing 7 days — drives the "+N this week" sub
+  createdThisWeek: number;
+  failedRuns: number;
+  avgRuntimeMs: number | null;
+}

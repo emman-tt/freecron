@@ -1,6 +1,6 @@
 //Jobs API — verbs mirror job.routes.ts one line at a time
 import { http, type Page } from "../../../shared/api/http";
-import type { CreateJobDTO, Job, JobFilters, UpdateJobDTO } from "./job.types";
+import type { CreateJobDTO, Job, JobFilters, JobStats, UpdateJobDTO } from "./job.types";
 
 export const jobApi = {
   //GET /api/jobs — filters are flat query params; list keeps { data, meta }
@@ -20,4 +20,6 @@ export const jobApi = {
   toggle: (jobId: number) => http.patch<Job>(`/api/jobs/${jobId}`),
   runNow: (jobId: number) => http.post<Job>(`/api/jobs/${jobId}`),
   delete: (jobId: number) => http.delete<Job>(`/api/jobs/${jobId}`),
+  //GET /api/jobs/stats — one aggregate call for the dashboard stat cards
+  stats: () => http.get<JobStats>("/api/jobs/stats"),
 };

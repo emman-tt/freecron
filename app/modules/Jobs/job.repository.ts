@@ -49,6 +49,10 @@ export class JobRespository {
     const [jobAgg] = await db
       .select({
         totalJobs: count(),
+        pausedJobs:
+          sql<number>`COUNT(*) FILTER WHERE ${Job.isActive} = 'false'`.mapWith(
+            Number,
+          ),
         activeJobs:
           sql<number>`COUNT(*) FILTER (WHERE ${Job.isActive})`.mapWith(Number),
         createdThisWeek:
@@ -65,12 +69,11 @@ export class JobRespository {
           sql<number>`COUNT(*) FILTER (WHERE ${Execution.status} IN ('failed', 'timeout'))`.mapWith(
             Number,
           ),
-        avgRuntimeMs:
-          sql<
-            number | null
-          >`AVG(${Execution.duration}) FILTER (WHERE ${Execution.duration} IS NOT NULL)`.mapWith(
-            Number,
-          ),
+        avgRuntimeMs: sql<
+          number | null
+        >`AVG(${Execution.duration}) FILTER (WHERE ${Execution.duration} IS NOT NULL)`.mapWith(
+          Number,
+        ),
       })
       .from(Execution)
       .innerJoin(Job, eq(Execution.jobId, Job.id))
@@ -79,8 +82,7 @@ export class JobRespository {
     return {
       totalJobs: jobAgg?.totalJobs ?? 0,
       activeJobs: jobAgg?.activeJobs ?? 0,
-      //paused is just the complement — no second filter needed
-      pausedJobs: (jobAgg?.totalJobs ?? 0) - (jobAgg?.activeJobs ?? 0),
+      pausedJobs: jobAgg?.pausedJobs ?? 0,
       createdThisWeek: jobAgg?.createdThisWeek ?? 0,
       failedRuns: runAgg?.failedRuns ?? 0,
       avgRuntimeMs: runAgg?.avgRuntimeMs ?? null,

@@ -12,6 +12,15 @@ export function useJobs(filters: JobFilters, page: number) {
   });
 }
 
+//Dashboard stat-card aggregates (GET /api/jobs/stats). Key nests under
+//["jobs"] so every job mutation's invalidation refreshes it too
+export function useJobStats() {
+  return useQuery({
+    queryKey: ["jobs", "stats"],
+    queryFn: () => jobApi.stats(),
+  });
+}
+
 export function useJob(jobId: number) {
   return useQuery({
     queryKey: ["job", String(jobId)],

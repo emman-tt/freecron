@@ -38,7 +38,7 @@ const relTime = (iso?: string) => {
 };
 
 export function DashboardPage() {
-  const { rows, stats, detail: d, recent, currentId, setSelected, toggle } = useDashboard();
+  const { rows, stats, currentStats, detail: d, recent, currentId, setSelected, toggle } = useDashboard();
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "paused">("all");
   const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
@@ -55,19 +55,24 @@ export function DashboardPage() {
         (statusFilter === "active" ? j.isActive : !j.isActive)) &&
       j.name.toLowerCase().includes(search.toLowerCase()),
   );
-  const hasFailures = recent.some((r) => r.status === "failed" || r.statusCode === 0);
-  const statusLabel = d ? statusVocab(d.isActive, hasFailures) : "";
+  //"Needs care" reads the selected job's FINAL outcome from its stats
+  //(all-time), not the latest page of runs
+  const failing =
+    currentStats?.lastStatus === "failed" || currentStats?.lastStatus === "timeout";
+  const statusLabel = d ? statusVocab(d.isActive, failing) : "";
   const cronDesc = describeCron(d?.cronExpression ?? "");
   const cronDisplay = cronDesc ? cronDesc.replace("Next run: ", "") : "";
 
-  //Stat Sub lines — only what the API can prove (no fake weekly deltas)
+  //Stat Sub lines — only what the API can prove
   const totalSub =
-    stats.active !== undefined && stats.paused !== undefined
-      ? `${stats.active} active · ${stats.paused} paused`
-      : undefined;
+    stats && stats.createdThisWeek > 0
+      ? `+${stats.createdThisWeek} this week`
+      : stats
+        ? `${stats.activeJobs} active · ${stats.pausedJobs} paused`
+        : undefined;
   const activeSub =
-    stats.total !== undefined && stats.active !== undefined && stats.total > 0
-      ? `${Math.round((stats.active / stats.total) * 100)}% healthy`
+    stats && stats.totalJobs > 0
+      ? `${Math.round((stats.activeJobs / stats.totalJobs) * 100)}% healthy`
       : undefined;
 
   return (
@@ -115,10 +120,20 @@ export function DashboardPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Total Jobs" value={stats.total ?? "…"} sub={totalSub} />
-        <StatCard label="Active" value={stats.active ?? "…"} sub={activeSub} />
-        <StatCard label="Paused" value={stats.paused ?? "…"} sub="Off until resumed" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        <StatCard label="Total Jobs" value={stats?.totalJobs ?? "…"} sub={totalSub} />
+        <StatCard label="Active" value={stats?.activeJobs ?? "…"} sub={activeSub} />
+        <StatCard label="Paused" value={stats?.pausedJobs ?? "…"} sub="Off until resumed" />
+        <StatCard
+          label="Failed"
+          value={stats?.failedRuns ?? "…"}
+          sub={stats ? (stats.failedRuns > 0 ? "All-time failures" : "None so far") : undefined}
+        />
+        <StatCard
+          label="Avg Runtime"
+          value={stats === undefined ? "…" : stats.avgRuntimeMs === null ? "—" : `${(stats.avgRuntimeMs / 1000).toFixed(2)}s`}
+          sub="All-time average"
+        />
       </div>
 
       {/*Design Content Row: Job List 360 : Details 760 (gap 16)*/}

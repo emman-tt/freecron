@@ -1,28 +1,30 @@
 //Report KPIs — design: one white R16 card, six stats (15/700 value over an
 //11px muted label): Down time, Average, Uptime, Lowest, Highest, Status.
-//Computed client-side from the loaded (latest) runs — only what the data
-//proves, nothing faked
-import type { Execution } from "../../executions/api/execution.types";
+//Numbers come from GET /api/executions/stats — exact aggregates over ALL
+//history of the job, not the loaded page. The chart beside it stays a
+//page-1 series (visual, not a claim)
+import type { ExecutionStats } from "../../executions/api/execution.types";
 import { dayLabel } from "../../../shared/lib/format";
 
-export function ReportKPIs({ runs }: { runs: Execution[] }) {
-  const durations = runs.map((r) => r.duration).filter((d): d is number => d !== null);
-  const avg = durations.length
-    ? durations.reduce((a, b) => a + b, 0) / durations.length
-    : null;
-  const fmt = (ms: number | null) => (ms === null ? "—" : `${(ms / 1000).toFixed(2)}s`);
-  const ok = runs.filter((r) => r.status === "success").length;
-  const uptime = runs.length ? Math.round((ok / runs.length) * 100) : null;
-  const lastFailure = runs.find((r) => r.status === "failed" || r.status === "timeout");
-  const last = runs[0];
+export function ReportKPIs({ stats: s }: { stats?: ExecutionStats }) {
+  const fmt = (ms: number | null | undefined) =>
+    ms == null ? "—" : `${(ms / 1000).toFixed(2)}s`;
+
+  const status = !s?.lastStatus
+    ? "—"
+    : s.lastStatus === "success"
+      ? "Up"
+      : s.lastStatus === "running"
+        ? "Running"
+        : "Down";
 
   const kpis: Array<[string, string]> = [
-    ["Down time", lastFailure ? `since ${dayLabel(lastFailure.startedAt)}` : "None"],
-    ["Average", fmt(avg)],
-    ["Uptime", uptime === null ? "—" : `${uptime}%`],
-    ["Lowest", fmt(durations.length ? Math.min(...durations) : null)],
-    ["Highest", fmt(durations.length ? Math.max(...durations) : null)],
-    ["Status", !last ? "—" : last.status === "success" ? "Up" : "Down"],
+    ["Down time", s?.lastFailureAt ? `since ${dayLabel(s.lastFailureAt)}` : "None"],
+    ["Average", fmt(s?.avgMs)],
+    ["Uptime", s?.uptimePct == null ? "—" : `${s.uptimePct}%`],
+    ["Lowest", fmt(s?.minMs)],
+    ["Highest", fmt(s?.maxMs)],
+    ["Status", status],
   ];
 
   return (

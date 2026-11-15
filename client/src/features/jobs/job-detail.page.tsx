@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useJob, useRunNow, useDeleteJob } from "./hooks/job.hooks";
-import { useExecutions } from "../executions/hooks/execution.hooks";
+import { useExecutions, useExecutionStats } from "../executions/hooks/execution.hooks";
 import { ExecutionsTable } from "../executions/components/executions-table";
 import { RunCards } from "../executions/components/run-cards";
 import { JobOverview } from "./components/job-overview";
@@ -26,6 +26,7 @@ export function JobDetailPage() {
 
   const job = useJob(id);
   const recent = useExecutions(id, 1);
+  const stats = useExecutionStats(id);
   const runNow = useRunNow();
   const remove = useDeleteJob();
 
@@ -73,7 +74,7 @@ export function JobDetailPage() {
             onRun={() => runNow.mutate(id, { onSuccess: () => setTab("Logs") })}
             onDelete={() => setConfirmDelete(true)}
           />
-          <ReportKPIs runs={latest} />
+          <ReportKPIs stats={stats.data} />
           <ResponseChart runs={latest} />
         </div>
       )}
