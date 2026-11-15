@@ -10,9 +10,9 @@ export function ScheduledPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-[28px] font-bold">Scheduled executions</h1>
+        <h1 className="text-[28px] font-bold text-[#0a0a0a]">Scheduled executions</h1>
         <p className="text-[13px] text-muted">
-          Next week, projected from each job's cron · timezone: your browser's
+          Queue preview from cronExpression → nextRunAt  •  timezone: your browser's
         </p>
       </div>
 

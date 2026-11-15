@@ -33,13 +33,13 @@ export function JobDetailPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Link to="/jobs" className="text-[14px] font-semibold">
-        ← Cron Job
+      <Link to="/jobs" className="text-[13px] text-muted hover:text-[#0a0a0a]">
+        ←  Cron Job  •  <span className="text-[#0a0a0a]">{j.name}</span>
       </Link>
       <div>
-        <h1 className="text-[26px] font-bold">{j.name}</h1>
+        <h1 className="text-[28px] font-bold text-[#0a0a0a]">Report</h1>
         <p className="text-[13px] text-muted">
-          {j.httpCommand.replace(/^https?:\/\//, "")} · {j.cronExpression}
+          {j.httpCommand.replace(/^https?:\/\//, "")}  •  {j.cronExpression}  •  {j.httpMethod}
         </p>
       </div>
 

@@ -22,11 +22,10 @@ export function JobsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-[28px] font-bold">Jobs</h1>
-          <p className="text-[13px] text-muted">{jobs.data?.meta.total ?? "…"} total</p>
-        </div>
+      <div className="flex items-center gap-2.5">
+        <h1 className="text-[28px] font-bold text-[#0a0a0a]">Jobs</h1>
+        <span className="text-[13px] text-muted">{jobs.data?.meta.total ?? "…"} total</span>
+        <div className="flex-1" />
         <Link to="/jobs/new" className={btnClass("primary")}>
           <Plus size={16} /> Add job
         </Link>

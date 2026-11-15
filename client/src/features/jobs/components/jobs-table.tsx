@@ -29,12 +29,12 @@ export function JobsTable({
   onPage: (page: number) => void;
 }) {
   return (
-    <div className="rounded-card border border-border bg-card p-4">
+    <div className="rounded-card bg-card p-4">
       <table className="w-full text-left">
         <thead>
           <tr className="text-[11px] font-bold text-muted">
             <th className="p-3" />
-            <th className="p-3">Name / Website to call</th>
+            <th className="p-3">Name / httpCommand</th>
             <th className="p-3">Cron</th>
             <th className="p-3">Method</th>
             <th className="p-3">Active</th>
@@ -44,7 +44,7 @@ export function JobsTable({
         </thead>
         <tbody>
           {jobs.map((job) => (
-            <tr key={job.id} className="border-t border-border align-middle hover:bg-muted-bg/60">
+            <tr key={job.id} className="align-middle transition-colors hover:bg-muted-bg/60">
               <td className="p-3">
                 <span
                   className={`block h-2 w-2 rounded-full ${
@@ -111,15 +111,28 @@ export function JobsTable({
         <p className="p-3 text-[13px] text-muted">No jobs match — try clearing the filters.</p>
       )}
       {meta && meta.totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-border p-3.5 text-[12px]">
+        <div className="flex items-center justify-between p-3.5 text-[12px]">
           <span className="text-muted">
             Showing {(meta.page - 1) * meta.limit + 1}-
             {(meta.page - 1) * meta.limit + jobs.length} of {meta.total}
           </span>
-          <div className="flex gap-2 font-bold">
-            <button disabled={!meta.hasPrev} onClick={() => onPage(meta.page - 1)}>‹</button>
-            <span>page {meta.page}/{meta.totalPages}</span>
-            <button disabled={!meta.hasNext} onClick={() => onPage(meta.page + 1)}>›</button>
+          {/*Design foot: ‹ 1 2 3 4 › numbered pages*/}
+          <div className="flex items-center gap-2 font-bold text-[#0a0a0a]">
+            <button disabled={!meta.hasPrev} onClick={() => onPage(meta.page - 1)}>
+              ‹
+            </button>
+            {Array.from({ length: meta.totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                onClick={() => onPage(p)}
+                className={p === meta.page ? "underline" : "text-muted"}
+              >
+                {p}
+              </button>
+            ))}
+            <button disabled={!meta.hasNext} onClick={() => onPage(meta.page + 1)}>
+              ›
+            </button>
           </div>
         </div>
       )}

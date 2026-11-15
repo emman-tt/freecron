@@ -21,7 +21,7 @@ export function ExecutionsTable({ jobId }: { jobId: number }) {
   const meta = runs.data?.meta;
 
   return (
-    <div className="rounded-card border border-border bg-card p-5">
+    <div className="rounded-card bg-card p-5">
       <table className="w-full text-left">
         <thead>
           <tr className="text-[11px] font-semibold text-muted">
@@ -35,7 +35,7 @@ export function ExecutionsTable({ jobId }: { jobId: number }) {
         <tbody>
           {rows.map((row) => (
             <Fragment key={row.id}>
-              <tr className="border-t border-border">
+              <tr className="transition-colors hover:bg-muted-bg/60">
                 <td className="p-3">
                   <span className={`block h-2 w-2 rounded-full ${bar[row.status]}`} />
                 </td>
@@ -75,7 +75,7 @@ export function ExecutionsTable({ jobId }: { jobId: number }) {
       </table>
       {runs.isLoading && <p className="p-3 text-[13px] text-muted">Loading runs…</p>}
       {meta && meta.totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-border p-3.5 text-[12px]">
+        <div className="flex items-center justify-between p-3.5 text-[12px]">
           <span className="text-muted">
             Showing page {meta.page} of {meta.totalPages} · {meta.total} runs
           </span>

@@ -1,5 +1,5 @@
 //Buttons — one primary per view; destructive is red and separate (design system)
-//primary: dark pill · secondary: white with border · danger: red
+//primary: dark R12 (p-12/18, 14/600) · secondary: white with border · danger: red
 type Variant = "primary" | "secondary" | "danger";
 
 const classes: Record<Variant, string> = {
@@ -9,7 +9,7 @@ const classes: Record<Variant, string> = {
 };
 
 export function btnClass(variant: Variant = "primary", className = "") {
-  return `inline-flex items-center gap-2 rounded-control px-5 py-3 text-[13px] font-semibold transition ${classes[variant]} ${className}`;
+  return `inline-flex items-center gap-2 rounded-control px-4.5 py-3 text-[14px] font-semibold transition ${classes[variant]} ${className}`;
 }
 
 export function Button({

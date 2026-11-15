@@ -1,5 +1,16 @@
+import { useState } from "react";
 import { Link } from "react-router";
-import { Newspaper, Plus, SquarePen } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  Bell,
+  Calendar,
+  ChevronDown,
+  Newspaper,
+  Plus,
+  RefreshCw,
+  Search,
+  SquarePen,
+} from "lucide-react";
 import { useDashboard } from "./hooks/dashboard.hooks";
 import { StatCard } from "./components/stat-card";
 import { Card } from "../../shared/ui/Card";
@@ -39,6 +50,22 @@ const dayLabel = (iso: string) => {
 
 export function DashboardPage() {
   const { rows, stats, detail: d, recent, currentId, setSelected, toggle } = useDashboard();
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "paused">("all");
+  const [search, setSearch] = useState("");
+  const queryClient = useQueryClient();
+  //Refresh = pure UI verb: revalidate the dashboard's queries
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ["jobs"] });
+    void queryClient.invalidateQueries({ queryKey: ["executions"] });
+  };
+
+  //Status filter + search run client-side over the loaded rows (no backend)
+  const visible = rows.filter(
+    (j) =>
+      (statusFilter === "all" ||
+        (statusFilter === "active" ? j.isActive : !j.isActive)) &&
+      j.name.toLowerCase().includes(search.toLowerCase()),
+  );
   const hasFailures = recent.some((r) => r.status === "failed" || r.statusCode === 0);
   const statusLabel = d ? statusVocab(d.isActive, hasFailures) : "";
   const cronDesc = describeCron(d?.cronExpression ?? "");
@@ -56,14 +83,47 @@ export function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-4 bg-bg min-h-screen">
-      <div className="flex items-center justify-between">
+      {/*TopBar: title + bell + avatar + profile per design*/}
+      <div className="flex items-center gap-3">
         <h1 className="text-[28px] font-bold text-[#0a0a0a]">Overview</h1>
+        <div className="flex-1" />
+        <Bell size={20} className="text-[#0a0a0a]" />
+        <span className="h-8 w-8 rounded-full bg-border" />
+        <span className="text-[14px] text-[#0a0a0a]">Profile&ensp;▾</span>
+      </div>
+
+      {/*Toolbar: add, refresh — then status + date filters on the right*/}
+      <div className="flex items-center gap-3">
         <Link
           to="/jobs/new"
-          className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
+          className="flex items-center gap-2 rounded-xl bg-primary px-4.5 py-3 text-[14px] font-semibold text-white transition-opacity hover:opacity-90"
         >
           <Plus size={16} /> Add a cron job
         </Link>
+        <button
+          onClick={refresh}
+          className="flex items-center gap-1.5 rounded-xl px-2 py-2.5 text-[14px] text-[#0a0a0a] transition-colors hover:bg-muted-bg"
+        >
+          <RefreshCw size={16} /> Refresh
+        </button>
+        <div className="flex-1" />
+        <div className="relative flex w-[170px] items-center rounded-control border border-border bg-card px-3.5 py-2.5">
+          <select
+            aria-label="Filter by status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+            className="w-full cursor-pointer appearance-none bg-transparent text-[13px] text-[#0a0a0a] outline-none"
+          >
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="paused">Paused</option>
+          </select>
+          <ChevronDown size={14} className="pointer-events-none absolute right-3 text-[#0a0a0a]" />
+        </div>
+        {/*Date-range filter is visual until the API grows range params*/}
+        <button className="flex items-center gap-2 rounded-control border border-border bg-card px-3.5 py-2.5 text-[13px] text-[#0a0a0a]">
+          <Calendar size={16} className="text-muted" /> This week <ChevronDown size={14} />
+        </button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -75,20 +135,29 @@ export function DashboardPage() {
       {/*Design Content Row: Job List 360 : Details 760 (gap 16)*/}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[360fr_760fr]">
         <Card className="flex flex-col gap-3 p-5">
-          <p className="text-[18px] font-bold text-[#0a0a0a]">Jobs</p>
+          <div className="flex items-center gap-2.5">
+            <p className="text-[18px] font-bold text-[#0a0a0a]">Jobs</p>
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2">
+              <Search size={14} className="shrink-0 text-muted" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search"
+                className="w-full bg-transparent text-[12px] text-[#0a0a0a] outline-none placeholder:text-muted"
+              />
+            </div>
+          </div>
           <div className="flex flex-col gap-2">
-            {rows.map((j) => (
+            {visible.map((j) => (
               <div
                 key={j.id}
                 onClick={() => setSelected(j.id)}
-                className={`flex cursor-pointer items-center gap-2.5 rounded-[14px] p-3 transition-colors ${
-                  j.id === currentId ? "bg-muted-bg" : "hover:bg-muted-bg/50"
-                }`}
+                className={`flex cursor-pointer items-center gap-2.5 rounded-[14px] p-3 transition-colors ${j.id === currentId ? "bg-muted-bg" : "hover:bg-muted-bg/50"
+                  }`}
               >
                 <span
-                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${
-                    j.isActive ? "bg-[#22C55E]" : "bg-[#EAB308]"
-                  }`}
+                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${j.isActive ? "bg-[#22C55E]" : "bg-[#EAB308]"
+                    }`}
                 />
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="truncate text-[14px] font-semibold text-[#0a0a0a]">{j.name}</span>
@@ -97,8 +166,10 @@ export function DashboardPage() {
                 <Toggle on={j.isActive} onChange={() => toggle.mutate(j.id)} />
               </div>
             ))}
-            {rows.length === 0 && (
-              <p className="text-[13px] text-muted">No jobs yet — add your first one.</p>
+            {visible.length === 0 && (
+              <p className="text-[13px] text-muted">
+                {rows.length === 0 ? "No jobs yet — add your first one." : "No jobs match."}
+              </p>
             )}
           </div>
         </Card>
@@ -172,13 +243,12 @@ export function DashboardPage() {
                   {recent.slice(0, 4).map((r) => (
                     <div key={r.id} className="flex flex-col gap-1 rounded-control bg-muted-bg p-3">
                       <span
-                        className={`h-2 w-2 rounded-full ${
-                          r.status === "success"
+                        className={`h-2 w-2 rounded-full ${r.status === "success"
                             ? "bg-[#22C55E]"
                             : r.status === "running"
                               ? "bg-[#EAB308]"
                               : "bg-[#FF2E2E]"
-                        }`}
+                          }`}
                       />
                       <span className="text-[12px] font-semibold text-[#0a0a0a]">
                         {new Date(r.startedAt).toLocaleTimeString("en-GB", {

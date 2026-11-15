@@ -17,9 +17,9 @@ export function NotificationsPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-[28px] font-bold">Notifications</h1>
+        <h1 className="text-[28px] font-bold text-[#0a0a0a]">Notifications</h1>
         <p className="text-[13px] text-muted">
-          email / slack on start · failure · success · per-job rules
+          email / slack on start • failure • success  •  per-job rules
         </p>
       </div>
 

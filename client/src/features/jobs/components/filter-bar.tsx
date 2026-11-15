@@ -17,7 +17,7 @@ export function FilterBar({
         placeholder="Search name…"
         value={filters.name ?? ""}
         onChange={(e) => onChange({ ...filters, name: e.target.value || undefined })}
-        className="w-56 rounded-control border border-border bg-card px-3.5 py-2.5 text-[13px] outline-none placeholder:text-muted"
+        className="w-[260px] rounded-control border border-border bg-card px-3.5 py-2.5 text-[13px] outline-none placeholder:text-muted"
       />
       <ChipSelect
         label="Status"

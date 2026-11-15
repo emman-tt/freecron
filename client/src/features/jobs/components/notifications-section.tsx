@@ -22,18 +22,21 @@ export function NotificationsSection({ jobId }: { jobId: number }) {
   });
 
   return (
-    <section className="mt-6 flex flex-col gap-3">
-      <h2 className="text-[14px] font-semibold">
-        Notifications · email / slack on start · failure · success
-      </h2>
+    <section className="mt-2 flex flex-col gap-2.5">
+      <p className="text-[13px] font-semibold text-[#0a0a0a]">
+        Notifications  •  email / slack on start • failure • success
+      </p>
       {(rules.data ?? []).map((n) => (
-        <div key={n.id} className="flex items-center gap-3 rounded-field bg-muted-bg px-3 py-3">
-          <span className="text-[12px]">
-            {n.type} · {n.event} → <span className="text-muted">{n.target}</span>
+        <div key={n.id} className="flex items-center gap-2.5 rounded-field bg-muted-bg p-3">
+          <span
+            className={`h-2 w-2 shrink-0 rounded-full ${n.enabled ? "bg-success" : "bg-border"}`}
+          />
+          <span className="min-w-0 flex-1 truncate text-[12px] text-[#0a0a0a]">
+            {n.type} • {n.event}  →  <span className="text-muted">{n.target}</span>
           </span>
           <button
             onClick={() => toggle.mutate(n.id)}
-            className={`ml-auto text-[11px] font-bold ${n.enabled ? "text-success" : "text-muted"}`}
+            className={`text-[11px] font-bold ${n.enabled ? "text-success" : "text-muted"}`}
           >
             {n.enabled ? "On" : "Off"}
           </button>
