@@ -5,6 +5,8 @@ const router: Router = express.Router();
 
 router.post("/", jobController.create.bind(jobController));
 router.get("/", jobController.findAllJobs.bind(jobController));
+//stats must be registered before "/:jobId" or Express matches it as a jobId
+router.get("/stats", jobController.findStats.bind(jobController));
 router.get("/:jobId", jobController.findJob.bind(jobController));
 router.patch("/:jobId", jobController.toggleActive.bind(jobController));
 router.put("/:jobId", jobController.update.bind(jobController));

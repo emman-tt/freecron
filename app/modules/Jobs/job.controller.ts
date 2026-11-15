@@ -73,6 +73,21 @@ export class JobController {
     }
   }
 
+  async findStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      //Call service — scoping is entirely req.userId, no params to validate
+      const result = await this.jobService.stats(req.userId, req.log);
+
+      //Return resource response
+      res.status(200).json({
+        status: "success",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async findJob(req: Request, res: Response, next: NextFunction) {
     try {
       const paramsSchema = z.object({

@@ -68,9 +68,7 @@ export class ExecutionRespository {
     return entity;
   }
 
-  //Aggregates over one job's full history, plus its latest row's status.
-  //SQL FILTER keeps it a single scan; count/avg arrive as strings from pg,
-  //mapWith(Number) coerces them at the driver boundary.
+
   async statsByJobId(id: number) {
     const [aggregates] = await db
       .select({

@@ -45,3 +45,17 @@ export interface JobFilters {
   httpMethod?: "POST" | "GET" | "PATCH" | "PUT" | "DELETE" | undefined;
   name?: string | undefined;
 }
+
+//Aggregates for the dashboard stat cards, scoped to one user's jobs.
+//failedRuns/avgRuntimeMs follow the same "final outcome only" semantics as
+//ExecutionStatsDTO — retries reuse the execution row, so terminal status IS
+//the outcome.
+export interface JobStatsDTO {
+  totalJobs: number;
+  activeJobs: number;
+  pausedJobs: number;
+  //jobs created in the trailing 7 days — drives the "+N this week" sub
+  createdThisWeek: number;
+  failedRuns: number;
+  avgRuntimeMs: number | null;
+}

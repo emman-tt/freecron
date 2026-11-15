@@ -5,7 +5,11 @@ import {
 import type { Execution as ExecutionType } from "../../shared/types/entities.js";
 import type { JobService } from "../Jobs/job.service.js";
 import type { ExecutionRespository } from "./execution.repository.js";
-import type { updateDTO, userResponseDTO, ExecutionStatsDTO } from "./execution.types.js";
+import type {
+  updateDTO,
+  userResponseDTO,
+  ExecutionStatsDTO,
+} from "./execution.types.js";
 import {
   resolvePagination,
   toPaginated,
@@ -147,10 +151,20 @@ export class ExecutionService {
     return updated;
   }
 
-  async findOneSystem(executionId: number, log: Logger): Promise<ExecutionType> {
+  async findOneSystem(
+    executionId: number,
+    log: Logger,
+  ): Promise<ExecutionType> {
     const execution = await this.executionRepo.findById(executionId);
     if (!execution) {
-      log.error({ executionId, filename: "execution.service.ts", functionname: "ExecutionService.findOneSystem" }, "execution not found by system");
+      log.error(
+        {
+          executionId,
+          filename: "execution.service.ts",
+          functionname: "ExecutionService.findOneSystem",
+        },
+        "execution not found by system",
+      );
       throw new UnrecoverableError("execution not found");
     }
     return execution as ExecutionType;
@@ -171,24 +185,18 @@ export class ExecutionService {
     return toPaginated(data, total, { page, limit });
   }
 
-  //Report-page KPIs over ALL history of one job (user-scoped like findJobUser)
   async stats(
     jobId: number,
     userId: string,
     log: Logger,
   ): Promise<ExecutionStatsDTO> {
-    //Ownership gate — stats must not leak other users' jobs
     await this.jobService.findJobUser(jobId, userId, log);
 
     const raw = await this.executionRepo.statsByJobId(jobId);
 
-    //mapWith(Number) is typed nullable — aggregate SQL can't be null over an
-    //empty aggregate row, so these coalesce to 0
     const successRuns = raw.successRuns ?? 0;
     const failedRuns = raw.failedRuns ?? 0;
 
-    //Uptime is measured over TERMINAL runs only — an in-flight "running" row
-    //hasn't failed, so it must not drag the percentage down
     const terminal = successRuns + failedRuns;
     const uptimePct =
       terminal > 0 ? Math.round((successRuns / terminal) * 100) : null;
@@ -202,8 +210,6 @@ export class ExecutionService {
       avgMs: raw.avgMs ?? null,
       minMs: raw.minMs ?? null,
       maxMs: raw.maxMs ?? null,
-      //max() over the column comes back unparsed (string) — normalize to a
-      //Date so it serializes as ISO like every other timestamp in the envelope
       lastFailureAt: raw.lastFailureAt ? new Date(raw.lastFailureAt) : null,
       lastStatus: raw.lastStatus,
     };

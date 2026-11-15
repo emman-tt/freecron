@@ -3,6 +3,7 @@ import {
   type JobFilters,
   type updateJobDTO,
   type jobResponseDTO,
+  type JobStatsDTO,
 } from "./job.types.js";
 import type { JobRespository } from "./job.repository.js";
 import type { CronService } from "../../shared/lib/cron.service.js";
@@ -84,6 +85,22 @@ export class JobService {
 
     //Return appropraite response object
     return this.toResponseDTO(createdJob);
+  }
+
+  //Dashboard stat-card aggregates for one user (counts + run outcomes)
+  async stats(userId: string, log: Logger): Promise<JobStatsDTO> {
+    const result = await this.jobRepo.statsForUser(userId);
+
+    log.info(
+      {
+        userId: userId,
+        totalJobs: result.totalJobs,
+        filename: "job.service.ts",
+        functionname: "JobService.stats",
+      },
+      "job stats computed",
+    );
+    return result;
   }
 
   async findJobUser(

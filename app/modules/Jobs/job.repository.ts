@@ -1,4 +1,4 @@
-import { Job, User } from "../../database/db.schema.js";
+import { Job, Execution, User } from "../../database/db.schema.js";
 import db from "../../database/db.config.js";
 import { and, count, desc, eq, gt, ilike, lt, lte, sql } from "drizzle-orm";
 import type { createJobDTO, JobFilters, updateJobDTO } from "./job.types.js";
@@ -41,6 +41,50 @@ export class JobRespository {
       .where(and(...this.filterConditions(userId, filters)));
 
     return row?.total ?? 0;
+  }
+
+  //Dashboard stat-card aggregates for one user: job counts from the job
+  //table, run outcomes joined through it. FILTER keeps each a single scan.
+  async statsForUser(userId: string) {
+    const [jobAgg] = await db
+      .select({
+        totalJobs: count(),
+        activeJobs:
+          sql<number>`COUNT(*) FILTER (WHERE ${Job.isActive})`.mapWith(Number),
+        createdThisWeek:
+          sql<number>`COUNT(*) FILTER (WHERE ${Job.createdAt} >= now() - INTERVAL '7 days')`.mapWith(
+            Number,
+          ),
+      })
+      .from(Job)
+      .where(eq(Job.userId, userId));
+
+    const [runAgg] = await db
+      .select({
+        failedRuns:
+          sql<number>`COUNT(*) FILTER (WHERE ${Execution.status} IN ('failed', 'timeout'))`.mapWith(
+            Number,
+          ),
+        avgRuntimeMs:
+          sql<
+            number | null
+          >`AVG(${Execution.duration}) FILTER (WHERE ${Execution.duration} IS NOT NULL)`.mapWith(
+            Number,
+          ),
+      })
+      .from(Execution)
+      .innerJoin(Job, eq(Execution.jobId, Job.id))
+      .where(eq(Job.userId, userId));
+
+    return {
+      totalJobs: jobAgg?.totalJobs ?? 0,
+      activeJobs: jobAgg?.activeJobs ?? 0,
+      //paused is just the complement — no second filter needed
+      pausedJobs: (jobAgg?.totalJobs ?? 0) - (jobAgg?.activeJobs ?? 0),
+      createdThisWeek: jobAgg?.createdThisWeek ?? 0,
+      failedRuns: runAgg?.failedRuns ?? 0,
+      avgRuntimeMs: runAgg?.avgRuntimeMs ?? null,
+    };
   }
 
   private filterConditions(userId: string, filters: JobFilters) {
