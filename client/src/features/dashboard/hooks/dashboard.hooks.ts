@@ -20,13 +20,11 @@ export function useDashboard() {
     queryFn: () => jobApi.list({ isActive: false }, 1),
   });
 
-  console.log("active", active.data?.meta.total);
-
   //Details card follows the design: selection defaults to the first job
   const rows = jobs.data?.data ?? [];
   const currentId = selected ?? rows[0]?.id;
   // const detail = useJob(currentId ?? 0, currentId !== undefined);
-  const detail = useJob(currentId ?? 1);
+  const detail = useJob(currentId ?? 0);
   const recent = useExecutions(currentId ?? 0, 1);
   const toggle = useToggleJob();
 

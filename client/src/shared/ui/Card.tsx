@@ -1,4 +1,5 @@
-//Card = white rounded surface from the design system (R20, border #E7E5E4)
+//Card = white rounded surface from the design system (R20, borderless —
+//the design uses plain white cards on the #F7F7F6 canvas, no strokes)
 export function Card({
   className,
   ...props
@@ -6,7 +7,7 @@ export function Card({
   return (
     <div
       {...props}
-      className={`rounded-card border border-border bg-card ${className ?? ""}`}
+      className={`rounded-card bg-card ${className ?? ""}`}
     />
   );
 }

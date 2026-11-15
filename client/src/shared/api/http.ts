@@ -1,7 +1,3 @@
-//One fetch wrapper for the whole client. The backend answers a JSON envelope:
-//success → { status, data, meta? }, failure → { status: "fail", error, message }.
-//This turns that envelope into plain data, and failures into a thrown ApiError
-//carrying the server's own message (so forms can show "Invalid cron format…")
 export class ApiError extends Error {
   readonly status: number;
   constructor(status: number, message: string) {
@@ -10,7 +6,11 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(
+  path: string,
+  init?: RequestInit,
+  raw = false,
+): Promise<T> {
   const res = await fetch(path, {
     ...init,
     credentials: "include",
@@ -18,11 +18,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   const json = await res.json();
   if (!res.ok) throw new ApiError(res.status, json.message ?? "Request failed");
-  return json as T;
+  return (raw ? json : json.data) as T;
+}
+
+async function list<T>(path: string): Promise<Page<T>> {
+  const json = await request<{ data: T[]; meta?: PaginationMeta }>(
+    path,
+    undefined,
+    true,
+  );
+  return { data: json.data, meta: json.meta as PaginationMeta };
 }
 
 export const http = {
   get: <T>(path: string) => request<T>(path),
+  list: <T>(path: string) => list<T>(path),
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, {
       method: "POST",
@@ -38,7 +48,6 @@ export const http = {
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };
 
-//List endpoints wrap their rows in a pagination envelope (pagination.ts)
 export interface PaginationMeta {
   page: number;
   limit: number;
@@ -46,4 +55,9 @@ export interface PaginationMeta {
   totalPages: number;
   hasNext: boolean;
   hasPrev: boolean;
+}
+
+export interface Page<T> {
+  data: T[];
+  meta: PaginationMeta;
 }

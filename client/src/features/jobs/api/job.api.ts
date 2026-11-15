@@ -1,18 +1,16 @@
 //Jobs API — verbs mirror job.routes.ts one line at a time
-import { http, type PaginationMeta } from "../../../shared/api/http";
+import { http, type Page } from "../../../shared/api/http";
 import type { CreateJobDTO, Job, JobFilters, UpdateJobDTO } from "./job.types";
 
-type Page<T> = { data: T[]; meta: PaginationMeta };
-
 export const jobApi = {
-  //GET /api/jobs — filters are flat query params
+  //GET /api/jobs — filters are flat query params; list keeps { data, meta }
   list(filters: JobFilters, page = 1): Promise<Page<Job>> {
     const q = new URLSearchParams({ page: String(page) });
     if (filters.name) q.set("name", filters.name);
     if (filters.isActive !== undefined)
       q.set("isActive", String(filters.isActive));
     if (filters.httpMethod) q.set("httpMethod", filters.httpMethod);
-    return http.get(`/api/jobs?${q}`);
+    return http.list<Job>(`/api/jobs?${q}`);
   },
   get: (jobId: number) => http.get<Job>(`/api/jobs/${jobId}`),
   create: (body: CreateJobDTO) => http.post<Job>("/api/jobs", body),

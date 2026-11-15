@@ -16,7 +16,8 @@ export function useJob(jobId: number) {
   return useQuery({
     queryKey: ["job", String(jobId)],
     queryFn: () => jobApi.get(jobId),
-    // enabled,
+    //no job yet (create form / empty dashboard) → don't hit /api/jobs/0
+    enabled: jobId > 0,
   });
 }
 

@@ -21,7 +21,7 @@ export function JobFormPage() {
   const editing = jobId !== undefined;
   const navigate = useNavigate();
 
-  const existing = useJob(Number(jobId ?? 0), editing);
+  const existing = useJob(Number(jobId ?? 0));
   const save = useSaveJob(editing ? Number(jobId) : undefined);
 
   //Local form state; prefill from the fetched job in edit mode
