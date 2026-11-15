@@ -30,7 +30,6 @@ export class NotificationQueue {
           delay: process.env.NODE_ENV === "test" ? 100 : 3000,
         },
         removeOnComplete: true,
-
         removeOnFail: true,
       },
     );

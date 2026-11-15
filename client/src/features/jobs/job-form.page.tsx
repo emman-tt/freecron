@@ -18,6 +18,18 @@ import type { HttpMethod } from "./api/job.types";
 
 const httpMethods: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
+//Cron quick picks + suggestion source — every entry is valid per cron-parser
+const cronPresets = [
+  { label: "Every 15 minutes", cron: "*/15 * * * *" },
+  { label: "Every hour", cron: "0 * * * *" },
+  { label: "Every day at 02:00", cron: "0 2 * * *" },
+  { label: "Every day at 18:00", cron: "0 18 * * *" },
+  { label: "Weekdays at 09:00", cron: "0 9 * * 1-5" },
+  { label: "Every Monday at 09:00", cron: "0 9 * * 1" },
+  { label: "Every Sunday at 23:00", cron: "0 23 * * 0" },
+  { label: "1st of the month", cron: "0 0 1 * *" },
+];
+
 export function JobFormPage() {
   const { jobId } = useParams();
   const editing = jobId !== undefined;
@@ -116,6 +128,29 @@ export function JobFormPage() {
 
   const preview = isValidCron(form.cronExpression) ? describeCron(form.cronExpression) : null;
 
+  //Suggestions: quick picks whose label or cron text matches what's typed
+  const cronQuery = form.cronExpression.trim();
+  const suggestions =
+    cronQuery === ""
+      ? []
+      : cronPresets
+          .filter(
+            (p) =>
+              p.cron !== cronQuery &&
+              (p.label.toLowerCase().includes(cronQuery.toLowerCase()) ||
+                p.cron.includes(cronQuery)),
+          )
+          .slice(0, 4);
+
+  function applyCron(p: { label: string; cron: string }) {
+    setForm({ ...form, cronExpression: p.cron });
+    setErrors((e) => {
+      const next = { ...e };
+      delete next.cronExpression;
+      return next;
+    });
+  }
+
   if (editing && existing.isLoading) {
     return <p className="text-[13px] text-muted">Loading job…</p>;
   }
@@ -156,6 +191,42 @@ export function JobFormPage() {
           />
         )}
       </Field>
+
+      {/*Suggestions — quick picks matching what's typed (label or cron text)*/}
+      {suggestions.length > 0 && (
+        <div className="flex flex-col overflow-hidden rounded-field border border-border bg-card">
+          {suggestions.map((p) => (
+            <button
+              key={p.cron}
+              type="button"
+              onClick={() => applyCron(p)}
+              className="flex items-center justify-between gap-3 px-3.5 py-2.5 text-left text-[12px] text-[#0a0a0a] transition-colors hover:bg-muted-bg"
+            >
+              <span>{p.label}</span>
+              <span className="font-mono text-[11px] text-muted">{p.cron}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/*Quick picks — one tap fills the field; active one is highlighted*/}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="mr-1 text-[11px] font-semibold text-muted">Quick picks</span>
+        {cronPresets.map((p) => (
+          <button
+            key={p.cron}
+            type="button"
+            onClick={() => applyCron(p)}
+            className={`rounded-full border px-3 py-1.5 text-[12px] transition-colors ${
+              form.cronExpression === p.cron
+                ? "border-primary bg-muted-bg font-semibold text-[#0a0a0a]"
+                : "border-border text-muted hover:text-[#0a0a0a]"
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
 
       {preview && !editing && (
         <div className="flex items-center gap-3 rounded-field bg-muted-bg p-3">

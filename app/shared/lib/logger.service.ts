@@ -22,11 +22,11 @@ export const reqLogger = pino({
   transport: {
     target: "pino-pretty",
     options: {
-      destination: "./logs/freecron.log", // Write directly to this file
-      mkdir: true, // Create the /logs folder if it doesn't exist
-      colorize: true, // No color codes (since it's a file)
-      translateTime: "SYS:standard", // Readable timestamp (e.g., 2026-11-15 10:30:00)
-      ignore: "pid,hostname", // Hide the noisy stuff
+      destination: "./logs/freecron.log",
+      mkdir: true,
+      colorize: true,
+      translateTime: "SYS:standard",
+      ignore: "pid,hostname",
     },
   },
 });
@@ -46,11 +46,11 @@ export const workerLogger = pino({
   transport: {
     target: "pino-pretty",
     options: {
-      destination: "./logs/freecron.log", // Write directly to this file
-      mkdir: true, // Create the /logs folder if it doesn't exist
-      colorize: true, // No color codes (since it's a file)
-      translateTime: "SYS:standard", // Readable timestamp (e.g., 2026-11-15 10:30:00)
-      ignore: "pid,hostname", // Hide the noisy stuff
+      destination: "./logs/freecron.log",
+      mkdir: true,
+      colorize: true,
+      translateTime: "SYS:standard",
+      ignore: "pid,hostname",
     },
   },
   base: { service: "worker-journey" },
@@ -71,11 +71,11 @@ export const watchManLogger = pino({
   transport: {
     target: "pino-pretty",
     options: {
-      destination: "./logs/freecron.log", // Write directly to this file
-      mkdir: true, // Create the /logs folder if it doesn't exist
-      colorize: true, // No color codes (since it's a file)
-      translateTime: "SYS:standard", // Readable timestamp (e.g., 2026-11-15 10:30:00)
-      ignore: "pid,hostname", // Hide the noisy stuff
+      destination: "./logs/freecron.log",
+      mkdir: true,
+      colorize: true,
+      translateTime: "SYS:standard",
+      ignore: "pid,hostname",
     },
   },
   base: { service: "schedule-watchman" },
@@ -96,11 +96,11 @@ export const infraLogger = pino({
   transport: {
     target: "pino-pretty",
     options: {
-      destination: "./logs/freecron.log", // Write directly to this file
-      mkdir: true, // Create the /logs folder if it doesn't exist
-      colorize: true, // No color codes (since it's a file)
-      translateTime: "SYS:standard", // Readable timestamp (e.g., 2026-11-15 10:30:00)
-      ignore: "pid,hostname", // Hide the noisy stuff
+      destination: "./logs/freecron.log",
+      mkdir: true,
+      colorize: true,
+      translateTime: "SYS:standard",
+      ignore: "pid,hostname",
     },
   },
   base: { service: "infra-journey" },

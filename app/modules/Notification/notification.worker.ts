@@ -68,7 +68,14 @@ export class NotificationWorker {
     });
 
     if (typeof executionId !== "number") {
-      log.error({ notificationId, filename: "notification.worker.ts", functionname: "NotificationWorker.Processor" }, "missing executionId in queue payload");
+      log.error(
+        {
+          notificationId,
+          filename: "notification.worker.ts",
+          functionname: "NotificationWorker.Processor",
+        },
+        "missing executionId in queue payload",
+      );
       throw new UnrecoverableError("missing executionId");
     }
 
@@ -124,7 +131,12 @@ export class NotificationWorker {
           channel: notication.channelId!,
         });
         log.info(
-          { channel: notication.channelId, ts: (data as { ts?: string }).ts, filename: "notification.worker.ts", functionname: "NotificationWorker.SlackProcessor" },
+          {
+            channel: notication.channelId,
+            ts: (data as { ts?: string }).ts,
+            filename: "notification.worker.ts",
+            functionname: "NotificationWorker.SlackProcessor",
+          },
           "slack message posted",
         );
         return;
@@ -155,7 +167,12 @@ export class NotificationWorker {
         });
 
         log.info(
-          { channel: notication.channelId, ts: (data as { ts?: string }).ts, filename: "notification.worker.ts", functionname: "NotificationWorker.SlackProcessor" },
+          {
+            channel: notication.channelId,
+            ts: (data as { ts?: string }).ts,
+            filename: "notification.worker.ts",
+            functionname: "NotificationWorker.SlackProcessor",
+          },
           "slack message posted",
         );
         return;
