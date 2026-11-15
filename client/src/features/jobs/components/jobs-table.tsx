@@ -30,7 +30,15 @@ export function JobsTable({
 }) {
   return (
     <div className="rounded-card bg-card p-4">
-      <table className="w-full text-left">
+      <table className="w-full table-fixed text-left">
+        <colgroup>
+          <col className="w-10" />
+          <col className="w-[27%]" />
+          <col className="w-[12%]" />
+          <col className="w-[10%]" />
+          <col className="w-[11%]" />
+          <col className="w-[24%]" />
+        </colgroup>
         <thead>
           <tr className="text-[11px] font-bold text-muted">
             <th className="p-3" />
@@ -53,14 +61,14 @@ export function JobsTable({
                 />
               </td>
               <td className="p-3">
-                <Link to={`/jobs/${job.id}`} className="flex flex-col gap-0.5">
-                  <span className="text-[13px] font-semibold">{job.name}</span>
+                <Link to={`/jobs/${job.id}`} className="flex min-w-0 flex-col gap-0.5">
+                  <span className="truncate text-[13px] font-semibold">{job.name}</span>
                   <span className="truncate text-[11px] text-muted">
                     {job.httpCommand.replace(/^https?:\/\//, "")}
                   </span>
                 </Link>
               </td>
-              <td className="p-3 font-mono text-[11px] font-bold">{job.cronExpression}</td>
+              <td className="whitespace-nowrap p-3 font-mono text-[11px] font-bold">{job.cronExpression}</td>
               <td className="p-3">
                 <span className="rounded-lg bg-muted-bg px-2.5 py-1 text-[11px] font-bold">
                   {job.httpMethod}
@@ -73,7 +81,7 @@ export function JobsTable({
                   onChange={() => onToggle(job.id)}
                 />
               </td>
-              <td className="p-3 text-[11px] text-muted">
+              <td className="truncate p-3 text-[11px] text-muted">
                 {job.lastRunAt ? "ran" : "not yet"} →{" "}
                 {new Date(job.nextRunAt).toLocaleString("en-GB", {
                   day: "numeric",

@@ -58,4 +58,39 @@ export class ExecutionController {
       next(error);
     }
   }
+
+  async FindExecutionStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      //validate
+      const schema = z.object({
+        jobId: z.coerce
+          .number("job id is required")
+          .int("job id should be valid number")
+          .min(1, "Job is should be positive"),
+      });
+
+      const check = schema.safeParse(req.query);
+      if (!check.success) {
+        const formatted = z.prettifyError(check.error);
+        throw new ValidationError(`${formatted}`);
+      }
+
+      const { jobId } = check.data;
+
+      //Call service
+      const result = await this.executionService.stats(
+        jobId,
+        req.userId,
+        req.log,
+      );
+
+      //Return resource response
+      res.status(200).json({
+        status: "success",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

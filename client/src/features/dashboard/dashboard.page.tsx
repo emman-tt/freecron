@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useDashboard } from "./hooks/dashboard.hooks";
 import { StatCard } from "./components/stat-card";
+import { RunCards } from "../executions/components/run-cards";
 import { Card } from "../../shared/ui/Card";
 import { Toggle } from "../../shared/ui/Toggle";
 import { mask } from "../../shared/lib/format";
@@ -34,18 +35,6 @@ const relTime = (iso?: string) => {
   const h = Math.floor(ms / 3.6e6);
   const m = Math.round((ms % 3.6e6) / 6e4);
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
-};
-
-//"02:00 Today" / "02:00 Yday" / "02:00 15 Nov" for run cards
-const dayLabel = (iso: string) => {
-  const dt = new Date(iso);
-  const now = new Date();
-  const yday = new Date(now);
-  yday.setDate(now.getDate() - 1);
-  const same = (a: Date, b: Date) => a.toDateString() === b.toDateString();
-  if (same(dt, now)) return "Today";
-  if (same(dt, yday)) return "Yday";
-  return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 };
 
 export function DashboardPage() {
@@ -239,31 +228,8 @@ export function DashboardPage() {
 
               <div>
                 <p className="text-[15px] font-semibold text-[#0a0a0a]">Recent Runs</p>
-                <div className="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {recent.slice(0, 4).map((r) => (
-                    <div key={r.id} className="flex flex-col gap-1 rounded-control bg-muted-bg p-3">
-                      <span
-                        className={`h-2 w-2 rounded-full ${r.status === "success"
-                            ? "bg-[#22C55E]"
-                            : r.status === "running"
-                              ? "bg-[#EAB308]"
-                              : "bg-[#FF2E2E]"
-                          }`}
-                      />
-                      <span className="text-[12px] font-semibold text-[#0a0a0a]">
-                        {new Date(r.startedAt).toLocaleTimeString("en-GB", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}{" "}
-                        {dayLabel(r.startedAt)}
-                      </span>
-                      <span className="text-[11px] text-muted">
-                        {r.statusCode === 0 ? "no response" : r.statusCode}  •{" "}
-                        {r.duration === null ? "—" : `${(r.duration / 1000).toFixed(1)}s`}
-                      </span>
-                    </div>
-                  ))}
-                  {recent.length === 0 && <p className="text-[13px] text-muted">No runs yet.</p>}
+                <div className="mt-1.5">
+                  <RunCards runs={recent} />
                 </div>
               </div>
 

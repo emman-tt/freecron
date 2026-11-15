@@ -1,16 +1,20 @@
-//Job detail — the designed tabbed report: Overview (details card + recent
-//runs), Logs (execution table), Scheduled (upcoming fires from the cron).
+//Job detail — the designed tabbed report (hzqE1 "Report Unified"): pill tabs
+//Overview (details + KPIs + response chart), Logs (execution table),
+//Latest executions (run cards), Scheduled (upcoming fires from the cron).
 //Tabs live in local state; "View logs" actions switch to the Logs tab
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useJob, useRunNow, useDeleteJob } from "./hooks/job.hooks";
 import { useExecutions } from "../executions/hooks/execution.hooks";
 import { ExecutionsTable } from "../executions/components/executions-table";
+import { RunCards } from "../executions/components/run-cards";
 import { JobOverview } from "./components/job-overview";
+import { ReportKPIs } from "./components/report-kpis";
+import { ResponseChart } from "./components/response-chart";
 import { UpcomingRuns } from "./components/upcoming-runs";
 import { DeleteConfirm } from "./components/delete-confirm";
 
-const tabs = ["Overview", "Logs", "Scheduled"] as const;
+const tabs = ["Overview", "Logs", "Latest executions", "Scheduled"] as const;
 type Tab = (typeof tabs)[number];
 
 export function JobDetailPage() {
@@ -30,6 +34,7 @@ export function JobDetailPage() {
     return <p className="text-[13px] text-muted">This job doesn't exist or isn't yours.</p>;
 
   const j = job.data;
+  const latest = recent.data?.data ?? [];
 
   return (
     <div className="flex flex-col gap-4">
@@ -43,13 +48,17 @@ export function JobDetailPage() {
         </p>
       </div>
 
-      <div className="flex gap-1 border-b border-border">
+      {/*Pill tabs — active = white card, inactive = transparent muted (design)*/}
+      <div className="flex gap-2">
         {tabs.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`rounded-t-[10px] px-3.5 py-2 text-[13px] ${tab === t ? "font-bold text-[#0a0a0a]" : "text-muted hover:text-[#0a0a0a]"
-              }`}
+            className={`rounded-xl px-4 py-2.5 text-[13px] transition-colors ${
+              tab === t
+                ? "bg-card font-bold text-[#0a0a0a]"
+                : "text-muted hover:text-[#0a0a0a]"
+            }`}
           >
             {t}
           </button>
@@ -57,14 +66,24 @@ export function JobDetailPage() {
       </div>
 
       {tab === "Overview" && (
-        <JobOverview
-          job={j}
-          recent={(recent.data?.data ?? []).slice(0, 4)}
-          onRun={() => runNow.mutate(id, { onSuccess: () => setTab("Logs") })}
-          onDelete={() => setConfirmDelete(true)}
-        />
+        <div className="flex flex-col gap-4">
+          <JobOverview
+            job={j}
+            recent={latest.slice(0, 4)}
+            onRun={() => runNow.mutate(id, { onSuccess: () => setTab("Logs") })}
+            onDelete={() => setConfirmDelete(true)}
+          />
+          <ReportKPIs runs={latest} />
+          <ResponseChart runs={latest} />
+        </div>
       )}
       {tab === "Logs" && <ExecutionsTable jobId={id} />}
+      {tab === "Latest executions" && (
+        <div className="flex flex-col gap-2.5 rounded-[16px] bg-card p-4">
+          <p className="text-[15px] font-bold text-[#0a0a0a]">Latest executions</p>
+          <RunCards runs={latest} />
+        </div>
+      )}
       {tab === "Scheduled" && <UpcomingRuns cron={j.cronExpression} />}
 
       {confirmDelete && (

@@ -1,7 +1,7 @@
 import db from "../../database/db.config.js";
 import { Execution } from "../../database/db.schema.js";
 import type { Execution as ExecutionType } from "../../shared/types/entities.js";
-import { and, count, desc, eq, lt } from "drizzle-orm";
+import { and, count, desc, eq, lt, sql } from "drizzle-orm";
 import type { updateDTO } from "./execution.types.js";
 
 export const STALE_RUNNING_WINDOW_MS = 15 * 60 * 1000;
@@ -68,10 +68,43 @@ export class ExecutionRespository {
     return entity;
   }
 
-  // async getStats() {
-  //   //Aggregation and maths calculations in future
-  // }
+  //Aggregates over one job's full history, plus its latest row's status.
+  //SQL FILTER keeps it a single scan; count/avg arrive as strings from pg,
+  //mapWith(Number) coerces them at the driver boundary.
+  async statsByJobId(id: number) {
+    const [aggregates] = await db
+      .select({
+        totalRuns: count(),
+        successRuns:
+          sql<number>`COUNT(*) FILTER (WHERE ${Execution.status} = 'success')`.mapWith(
+            Number,
+          ),
+        failedRuns:
+          sql<number>`COUNT(*) FILTER (WHERE ${Execution.status} IN ('failed', 'timeout'))`.mapWith(
+            Number,
+          ),
+        avgMs: sql<
+          number | null
+        >`AVG(${Execution.duration}) FILTER (WHERE ${Execution.duration} IS NOT NULL)`.mapWith(
+          Number,
+        ),
+        minMs: sql<number | null>`MIN(${Execution.duration})`.mapWith(Number),
+        maxMs: sql<number | null>`MAX(${Execution.duration})`.mapWith(Number),
+        lastFailureAt: sql<Date | null>`MAX(${Execution.startedAt}) FILTER (WHERE ${Execution.status} IN ('failed', 'timeout'))`,
+      })
+      .from(Execution)
+      .where(eq(Execution.jobId, id));
 
+    //lastStatus = the most recent scheduled fire, whatever its state
+    const [latest] = await db
+      .select({ status: Execution.status })
+      .from(Execution)
+      .where(eq(Execution.jobId, id))
+      .orderBy(desc(Execution.startedAt), desc(Execution.id))
+      .limit(1);
+
+    return { ...aggregates, lastStatus: latest?.status ?? null };
+  }
 
   async markStaleRunning(cutoff: Date, error: string) {
     return await db

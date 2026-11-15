@@ -12,6 +12,24 @@ export interface userResponseDTO {
   response: Record<string, unknown> | null;
 }
 
+//Aggregates for the Report page KPIs, computed over ALL history of one job.
+//An execution row's status is its final outcome (retries reuse the same row),
+//so failed = fired runs that exhausted retries / hit ENOTFOUND.
+export interface ExecutionStatsDTO {
+  jobId: number;
+  totalRuns: number;
+  successRuns: number;
+  failedRuns: number;
+  //success share of TERMINAL runs (running rows excluded from the denominator)
+  uptimePct: number | null;
+  avgMs: number | null;
+  minMs: number | null;
+  maxMs: number | null;
+  //latest terminal failure timestamp — drives "Down time" on the report
+  lastFailureAt: Date | null;
+  lastStatus: "success" | "failed" | "timeout" | "running" | null;
+}
+
 export interface queueResponse {
   executionId: number;
   statusCode: number;

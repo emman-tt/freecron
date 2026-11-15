@@ -19,3 +19,20 @@ export function formatIn(ms: number): string {
   }
   return "now";
 }
+
+//"02:08" clock time
+export function hm(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+}
+
+//"02:08 Today" / "02:08 Yday" / "02:08 15 Nov" — run-card and lifecycle wording
+export function dayLabel(iso: string): string {
+  const dt = new Date(iso);
+  const now = new Date();
+  const yday = new Date(now);
+  yday.setDate(now.getDate() - 1);
+  const same = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+  if (same(dt, now)) return "Today";
+  if (same(dt, yday)) return "Yday";
+  return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}

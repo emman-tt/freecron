@@ -97,7 +97,7 @@ export function JobFormPage() {
     ),
   });
 
-  function submit(e: React.FormEvent) {
+  function submit(e: React.SubmitEvent) {
     e.preventDefault();
     //Validate with the backend's words before spending a request
     const next: Record<string, string> = {};
@@ -236,9 +236,9 @@ export function JobFormPage() {
         <>
           {/*Edit top: back + Active pill (click = toggle pause/resume)*/}
           <div className="flex items-center gap-3">
-            <Link to={`/jobs/${jobId}`} className="text-[13px] text-muted hover:text-[#0a0a0a]">
+            <div onClick={() => navigate(-1)} className="text-[13px] text-muted hover:text-[#0a0a0a]">
               ←  <span className="text-[#0a0a0a]">{existing.data?.name ?? "…"}</span>  •  #{jobId}
-            </Link>
+            </div>
             <div className="flex-1" />
             <button
               onClick={() => toggleActive.mutate(Number(jobId!))}
