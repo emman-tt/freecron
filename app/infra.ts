@@ -21,9 +21,8 @@ import { NotificationController } from "./modules/Notification/notification.cont
 import { NotificationQueue } from "./modules/Notification/notification.queue.js";
 import { ScheduleWorker } from "./modules/Scheduler/schedular.worker.js";
 import { pingDb } from "./database/db.config.js";
+import { NotificationWorker } from "./modules/Notification/notification.worker.js";
 
-//Composition-root connections: hoisted so checkInfra() can probe them
-//before boot commits to listening (startup guard)
 const cacheRedis = RedisConnection();
 const scheduleRedis = RedisConnection();
 const notifRedis = RedisConnection();
@@ -52,6 +51,12 @@ const worker = new ScheduleWorker(
   executionService,
   notificationService,
 );
+const notifWorker = new NotificationWorker(
+  notifRedis,
+  notificationService,
+  jobService,
+  executionService,
+);
 
 export {
   jobService,
@@ -66,16 +71,13 @@ export {
   executionController,
   notificationController,
   userController,
+  notifWorker,
 };
 
-//Startup guard: fail fast when Postgres or Redis are unreachable (dead
-//compose stack) instead of binding the server into a storm of reconnects
 export async function checkInfra() {
   await Promise.all([scheduleRedis.ping(), pingDb()]);
 }
 
-//Closes every connection handle this module opened — used for clean
-//shutdown and jest teardown so the process can exit without forceExit
 export async function closeInfra() {
   scheduler.closeWatchman();
   await worker.close();

@@ -11,6 +11,7 @@ import type { Logger } from "pino";
 import { resend } from "../../shared/lib/mail.service.js";
 import type { NotificationService } from "./notification.service.js";
 import { workerLogger as logger } from "../../shared/lib/logger.service.js";
+import { notificationCounter } from "../../shared/lib/metrics.service.js";
 import {
   failedMail,
   successMail,
@@ -107,14 +108,14 @@ export class NotificationWorker {
   }
 
   async SlackProcessor(
-    notication: Notification,
+    notification: Notification,
     job: JobType,
     user: UserType,
     execution: ExecutionType,
     log: Logger,
   ): Promise<void> {
     try {
-      if (notication.event === "success") {
+      if (notification.event === "success") {
         const _params: SuccessMailParams = {
           jobName: job.name,
           userName: user.name,
@@ -128,21 +129,26 @@ export class NotificationWorker {
         const data = await slack.chat.postMessage({
           text: successSlack(_params).text,
           blocks: successSlack(_params).blocks,
-          channel: notication.channelId!,
+          channel: notification.channelId!,
         });
         log.info(
           {
-            channel: notication.channelId,
+            channel: notification.channelId,
             ts: (data as { ts?: string }).ts,
             filename: "notification.worker.ts",
             functionname: "NotificationWorker.SlackProcessor",
           },
           "slack message posted",
         );
+        notificationCounter.inc({
+          type: notification.type,
+          event: notification.event,
+          outcome: "sent",
+        });
         return;
       }
 
-      if (notication.event === "failure") {
+      if (notification.event === "failure") {
         //Send slacks of failed jobs
         const _params: FailedMailParams = {
           jobName: job.name,
@@ -163,36 +169,46 @@ export class NotificationWorker {
         const data = await slack.chat.postMessage({
           text: failedSlack(_params).text,
           blocks: failedSlack(_params).blocks,
-          channel: notication.channelId!,
+          channel: notification.channelId!,
         });
 
         log.info(
           {
-            channel: notication.channelId,
+            channel: notification.channelId,
             ts: (data as { ts?: string }).ts,
             filename: "notification.worker.ts",
             functionname: "NotificationWorker.SlackProcessor",
           },
           "slack message posted",
         );
+        notificationCounter.inc({
+          type: notification.type,
+          event: notification.event,
+          outcome: "sent",
+        });
         return;
       }
     } catch (error) {
       log.error(
         {
-          channel: notication.channelId,
+          channel: notification.channelId,
           err: error instanceof Error ? error.message : String(error),
           filename: "notification.worker.ts",
           functionname: "NotificationWorker.SlackProcessor",
         },
         "slack delivery failed",
       );
+      notificationCounter.inc({
+        type: notification.type,
+        event: notification.event,
+        outcome: "failed",
+      });
       throw error;
     }
   }
 
   async EmailProcessor(
-    notication: Notification,
+    notification: Notification,
     job: JobType,
     user: UserType,
     execution: ExecutionType,
@@ -200,7 +216,7 @@ export class NotificationWorker {
   ): Promise<void> {
     //Build email
 
-    if (notication.event === "success") {
+    if (notification.event === "success") {
       //Send emails of succesful jobs
 
       const _params: SuccessMailParams = {
@@ -214,15 +230,15 @@ export class NotificationWorker {
         reportUrl: "",
       };
       const sent = await resend.emails.send({
-        from: process.env.EMAIL_FROM,
-        to: [notication.target],
+        from: `Freecron <alerts@${process.env.EMAIL_FROM}>`,
+        to: [notification.target],
         subject: `[FreeCron] Success: ${_params.jobName} (${_params.status}, ${this.formatDuration(_params.duration)})`,
         html: successMail(_params),
       });
       if (sent?.error) {
         log.error(
           {
-            target: notication.target,
+            target: notification.target,
             err: sent.error.message ?? String(sent.error),
             filename: "notification.worker.ts",
             functionname: "NotificationWorker.EmailProcessor",
@@ -233,17 +249,22 @@ export class NotificationWorker {
       }
       log.info(
         {
-          target: notication.target,
+          target: notification.target,
           messageId: sent.data?.id,
           filename: "notification.worker.ts",
           functionname: "NotificationWorker.EmailProcessor",
         },
         "email delivered",
       );
+      notificationCounter.inc({
+        type: notification.type,
+        event: notification.event,
+        outcome: "sent",
+      });
       return;
     }
 
-    if (notication.event === "failure") {
+    if (notification.event === "failure") {
       //Send emails of failed jobs
       const _params: FailedMailParams = {
         jobName: job.name,
@@ -262,15 +283,15 @@ export class NotificationWorker {
         command: job.httpCommand,
       };
       const sent = await resend.emails.send({
-        from: process.env.EMAIL_FROM,
-        to: [notication.target],
+        from: `Freecron <alerts@${process.env.EMAIL_FROM}>`,
+        to: [notification.target],
         subject: `[FreeCron] Failed: ${job.name} (${execution.statusCode || "no response"})`,
         html: failedMail(_params),
       });
       if (sent?.error) {
         log.error(
           {
-            target: notication.target,
+            target: notification.target,
             err: sent.error.message ?? String(sent.error),
             filename: "notification.worker.ts",
             functionname: "NotificationWorker.EmailProcessor",
@@ -281,13 +302,18 @@ export class NotificationWorker {
       }
       log.info(
         {
-          target: notication.target,
+          target: notification.target,
           messageId: sent.data?.id,
           filename: "notification.worker.ts",
           functionname: "NotificationWorker.EmailProcessor",
         },
         "email delivered",
       );
+      notificationCounter.inc({
+        type: notification.type,
+        event: notification.event,
+        outcome: "sent",
+      });
       return;
     }
   }

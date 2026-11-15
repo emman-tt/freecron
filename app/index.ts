@@ -52,8 +52,7 @@ if (process.env.NODE_ENV !== "test") {
   boot();
 }
 
-//Startup guard: refuse to serve against dead infra — one fatal line instead
-//of an unthrottled reconnect storm. Exits 1 so the shell/dev runner surfaces it.
+
 async function boot(): Promise<void> {
   try {
     await checkInfra();
@@ -76,10 +75,7 @@ async function boot(): Promise<void> {
     process.exit(1);
   }
 
-  //Stale-running sweep (D-15), boot-time one-shot: worker, watchman and API
-  //share one Node process, so a ghost "running" row can only be created by a
-  //process death — and every death re-enters through this boot. Bookkeeping
-  //only: a failed sweep logs and boots anyway rather than blocking serving
+
   try {
     const swept = await executionRepo.markStaleRunning(
       new Date(Date.now() - STALE_RUNNING_WINDOW_MS),

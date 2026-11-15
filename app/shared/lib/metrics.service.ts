@@ -40,3 +40,10 @@ export const executionDuration = new Histogram({
   labelNames: ["status"] as const,
   registers: [register],
 });
+
+export const notificationCounter = new Counter({
+  name: "freecron_notifications_total",
+  help: "Total number of notification deliveries attempted",
+  labelNames: ["type", "event", "outcome"] as const,
+  registers: [register],
+});
