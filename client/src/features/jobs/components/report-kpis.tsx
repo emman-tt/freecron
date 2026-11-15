@@ -7,7 +7,7 @@
 //it stays a page-1 series (visual, not a claim)
 import { Info } from "lucide-react";
 import type { ExecutionStats } from "../../executions/api/execution.types";
-import { dayLabel } from "../../../shared/lib/format";
+import { dayLabel, durationLabel } from "../../../shared/lib/format";
 
 //One tooltip per KPI — plain-English definitions, same voice as the UI copy
 const TIPS: Record<string, string> = {
@@ -33,8 +33,8 @@ export function ReportKPIs({
   //truth about the job is "switched off", so Paused (yellow) overrides
   jobActive?: boolean;
 }) {
-  const fmt = (ms: number | null | undefined) =>
-    ms == null ? "—" : `${(ms / 1000).toFixed(2)}s`;
+  //fmt = durationLabel — same human format the chart tooltips use, so KPI
+  //values like 86492.47s render as "24h 1m"
 
   //Status value carries its color: green Up · blue Running · red Down ·
   //yellow Paused — the same dot vocabulary the rest of the app uses
@@ -60,10 +60,10 @@ export function ReportKPIs({
 
   const kpis: Array<[string, string, string?]> = [
     ["Last failure", s?.lastFailureAt ? dayLabel(s.lastFailureAt) : "None"],
-    ["Average", fmt(s?.avgMs)],
+    ["Average", durationLabel(s?.avgMs)],
     ["Uptime", s?.uptimePct == null ? "—" : `${s.uptimePct}%`],
-    ["Lowest", fmt(s?.minMs)],
-    ["Highest", fmt(s?.maxMs)],
+    ["Lowest", durationLabel(s?.minMs)],
+    ["Highest", durationLabel(s?.maxMs)],
     ["Status", status, statusColor],
   ];
 

@@ -3,10 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { executionApi } from "../api/execution.api";
 
-export function useExecutions(jobId: number, page: number) {
+export function useExecutions(jobId: number, page: number, limit?: number) {
   return useQuery({
-    queryKey: ["executions", String(jobId), page],
-    queryFn: () => executionApi.list(jobId, page),
+    queryKey: ["executions", String(jobId), page, limit ?? null],
+    queryFn: () => executionApi.list(jobId, page, limit),
     refetchInterval: 10_000,
   });
 }

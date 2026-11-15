@@ -3,7 +3,6 @@ import { Link } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Bell,
-  Calendar,
   ChevronDown,
   Newspaper,
   Plus,
@@ -114,10 +113,6 @@ export function DashboardPage() {
           </select>
           <ChevronDown size={14} className="pointer-events-none absolute right-3 text-[#0a0a0a]" />
         </div>
-        {/*Date-range filter is visual until the API grows range params*/}
-        <button className="flex items-center gap-2 rounded-control border border-border bg-card px-3.5 py-2.5 text-[13px] text-[#0a0a0a]">
-          <Calendar size={16} className="text-muted" /> This week <ChevronDown size={14} />
-        </button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">

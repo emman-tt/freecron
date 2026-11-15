@@ -25,6 +25,20 @@ export function hm(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
+//Human duration: "20ms" under a second, "0.34s" to the minute, "6m 05s" and
+//"24h 1m" beyond — chart tooltips and report KPIs share this so raw values
+//like 86492.47s never reach the user
+export function durationLabel(ms: number | null | undefined): string {
+  if (ms == null) return "—";
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(2)}s`;
+  const h = Math.floor(ms / 3_600_000);
+  const m = Math.floor((ms % 3_600_000) / 60_000);
+  if (h > 0) return `${h}h ${m}m`;
+  const s = Math.round((ms % 60_000) / 1000);
+  return `${m}m ${s.toString().padStart(2, "0")}s`;
+}
+
 //"02:08 Today" / "02:08 Yday" / "02:08 15 Nov" — run-card and lifecycle wording
 export function dayLabel(iso: string): string {
   const dt = new Date(iso);

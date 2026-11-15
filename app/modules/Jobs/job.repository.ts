@@ -50,7 +50,7 @@ export class JobRespository {
       .select({
         totalJobs: count(),
         pausedJobs:
-          sql<number>`COUNT(*) FILTER WHERE ${Job.isActive} = 'false'`.mapWith(
+          sql<number>`COUNT(*) FILTER (WHERE ${Job.isActive} = 'false')`.mapWith(
             Number,
           ),
         activeJobs:

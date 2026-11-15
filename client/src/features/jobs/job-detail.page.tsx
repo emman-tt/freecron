@@ -26,6 +26,8 @@ export function JobDetailPage() {
 
   const job = useJob(id);
   const recent = useExecutions(id, 1);
+  //the chart wants a wider window than the run cards — 30 bars of history
+  const chartRuns = useExecutions(id, 1, 30);
   const stats = useExecutionStats(id);
   const runNow = useRunNow();
   const remove = useDeleteJob();
@@ -75,7 +77,7 @@ export function JobDetailPage() {
             onDelete={() => setConfirmDelete(true)}
           />
           <ReportKPIs stats={stats.data} jobActive={j.isActive} />
-          <ResponseChart runs={latest} />
+          <ResponseChart runs={chartRuns.data?.data ?? []} />
         </div>
       )}
       {tab === "Logs" && <ExecutionsTable jobId={id} />}
