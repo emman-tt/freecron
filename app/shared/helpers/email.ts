@@ -23,6 +23,23 @@ export interface FailedMailParams {
   fixUrl: string;
 }
 
+function fmt(iso: string): string {
+  const then = new Date(iso).getTime();
+  const now = Date.now();
+  const diff = now - then; // ms
+  if (diff < 0) return "just now";
+  const minute = 60_000;
+  const hour = 3_600_000;
+  const day = 86_400_000;
+  if (diff < minute * 2) return "just now";
+  if (diff < minute * 60) return `${Math.floor(diff / minute)} minute${Math.floor(diff / minute) !== 1 ? "s" : ""} ago`;
+  if (diff < hour * 2) return "an hour ago";
+  if (diff < hour * 24) return `${Math.floor(diff / hour)} hour${Math.floor(diff / hour) !== 1 ? "s" : ""} ago`;
+  if (diff < day * 2) return "Yesterday";
+  const d = new Date(then);
+  return d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
 export function successMail(params: SuccessMailParams) {
   return `
     <!doctype html>
@@ -46,7 +63,7 @@ export function successMail(params: SuccessMailParams) {
     "
   >
     <div style="display: none; max-height: 0; overflow: hidden">
-      ${params.jobName} ${params.runAt} run succeeded (${params.status}) in ${params.duration}.
+      ${params.jobName} ${fmt(params.runAt)} run succeeded (${params.status}) in ${params.duration}.
     </div>
     <table
       role="presentation"
@@ -107,7 +124,7 @@ export function successMail(params: SuccessMailParams) {
                       vertical-align: 1px;
                     "
                   ></span
-                  >Success &nbsp;•&nbsp; ${params.status} &nbsp;•&nbsp; ${params.runAt} run</span
+                  >Success &nbsp;•&nbsp; ${params.status} &nbsp;•&nbsp; ${fmt(params.runAt)} run</span
                 >
                 <p
                   style="
@@ -117,8 +134,8 @@ export function successMail(params: SuccessMailParams) {
                     margin: 16px 0;
                   "
                 >
-                  Hi ${params.userName}, your ${params.runAt} run finished cleanly with a ${params.status}. No action
-                  needed — next run ${params.nextRun}.
+                  Hi ${params.userName}, your ${fmt(params.runAt)} run finished cleanly with a ${params.status}. No action
+                  needed — next run ${fmt(params.nextRun)}.
                 </p>
                 <table
                   role="presentation"
@@ -201,7 +218,7 @@ export function failedMail(params: FailedMailParams) {
     "
   >
     <div style="display: none; max-height: 0; overflow: hidden">
-      ${params.jobName} ${params.runAt} run failed (${params.status}) after ${params.retries} ${params.retries === 1 ? "retry" : "retries"}.
+      ${params.jobName} ${fmt(params.runAt)} run failed (${params.status}) after ${params.retries} ${params.retries === 1 ? "retry" : "retries"}.
     </div>
     <table
       role="presentation"
@@ -262,7 +279,7 @@ export function failedMail(params: FailedMailParams) {
                       vertical-align: 1px;
                     "
                   ></span
-                  >Failed &nbsp;•&nbsp; ${params.status} &nbsp;•&nbsp; ${params.runAt} run</span
+                  >Failed &nbsp;•&nbsp; ${params.status} &nbsp;•&nbsp; ${fmt(params.runAt)} run</span
                 >
                 <p
                   style="
@@ -272,7 +289,7 @@ export function failedMail(params: FailedMailParams) {
                     margin: 16px 0;
                   "
                 >
-                  Hi ${params.userName}, your ${params.runAt} run didn’t finish. It took ${params.duration} (limit
+                  Hi ${params.userName}, your ${fmt(params.runAt)} run didn’t finish. It took ${params.duration} (limit
                   ${params.timeout}) and returned ${params.status}. We’ve already retried ${params.retries} ${params.retries === 1 ? "time" : "times"}.
                 </p>
                 <table
@@ -292,7 +309,7 @@ export function failedMail(params: FailedMailParams) {
                       "
                     >
                       ${params.error} at ${params.command} — next try
-                      ${params.nextRun}
+                      ${fmt(params.nextRun)}
                     </td>
                   </tr>
                 </table>

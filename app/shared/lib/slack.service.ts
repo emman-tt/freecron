@@ -6,15 +6,37 @@ const token = process.env.SLACK_TOKEN;
 export const slack = new WebClient(token);
 
 async function runAuth() {
-  await slack.auth.test();
+  try {
+    await slack.auth.test();
 
-  logger.info(
-    {
-      filename: "slack.service.ts",
-      functionname: "runAuth",
-    },
-    "slack auth verified",
-  );
+    logger.info(
+      {
+        filename: "slack.service.ts",
+        functionname: "runAuth",
+      },
+      "slack auth verified",
+    );
+  } catch (error) {
+    logger.warn(
+      {
+        filename: "slack.service.ts",
+        functionname: "runAuth",
+        error: error instanceof Error ? error.message : String(error),
+      },
+      "slack auth test failed - continuing without verification (likely invalid token)",
+    );
+  }
 }
 
-process.env.NODE_ENV === "test" ? null : runAuth();
+if (process.env.NODE_ENV !== "test") {
+  runAuth().catch((error) => {
+    logger.warn(
+      {
+        filename: "slack.service.ts",
+        functionname: "runAuth",
+        error: error instanceof Error ? error.message : String(error),
+      },
+      "slack auth test failed  invalid token",
+    );
+  });
+}

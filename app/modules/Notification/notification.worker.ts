@@ -226,8 +226,8 @@ export class NotificationWorker {
         duration: execution.duration ?? 0,
         runAt: execution.startedAt.toISOString(),
         nextRun: job.nextRunAt.toISOString(),
-        // TODO reportUrl (yours, later): `${APP_URL}/jobs/${job.id}/report` — base URL from env/config.
-        reportUrl: "",
+        //TODO reportUrl (yours, later): `${APP_URL}/jobs/${job.id}/report` — base URL from env/config.
+        reportUrl: `${APP_URL}/jobs/${job.id}/report`,
       };
       const sent = await resend.emails.send({
         from: `Freecron <alerts@${process.env.EMAIL_FROM}>`,
