@@ -187,3 +187,31 @@ Central list of architectural and behavioral decisions in freecron, each with th
 **Decision.** One `markStaleRunning` statement at boot — before `listen`, after the infra probe, in its own try/catch so a sweep failure logs and boots anyway. Anything `running` with `startedAt` older than 15 minutes is marked `failed` with `statusCode 0` (D-12 sentinel) and a self-describing error string; `duration` stays null (the run never finished — do not fabricate). No cron, no new dependencies in the composition root.
 
 **Consequences.** The threshold rests on D-9's ceiling (~3 min for 5 attempts × timeout + backoffs); 15 minutes gives wide margin, so no genuinely in-flight run is ever swept. Coverage is complete for single-process deploys because every ghost implies a process death and every death re-enters through boot; tsx hot-reload restarts heal ghosts within one code save. Multi-worker deployments make this redundant via BullMQ stall recovery — but not harmful (idempotent, one query per boot), and it still covers the everyone-died-at-once case. A recurring sweep was rejected as over-engineering for the single-process architecture it would run in.
+
+---
+
+## D-16 — Notification delivery outcomes are counted by `type` / `event` / `outcome`
+
+**Status:** adopted, in `notification.worker.ts` + `metrics.service.ts`. Mirrors the scheduler's counter/histogram pattern (D-14) for the delivery side.
+
+**Context.** Before this counter, a notification that never left the process was invisible to Prometheus: a rejected Resend call, a bad Slack channel, or a dead token produced log lines only, so "nobody got alerted" looked the same as "no rules fired". The schedule worker already had `freecron_executions_total`; the notification worker had no metric at all.
+
+**Decision.** `freecron_notifications_total` counter, labels `type` (`email` | `slack`), `event` (`start` | `failure` | `success`), `outcome` (`sent` | `failed`):
+- `sent` is incremented after Slack `chat.postMessage` returns, and after Resend returns without `error`.
+- `failed` is incremented in the Slack catch block before the error is re-thrown into BullMQ retries.
+- Email `sent.error` is logged as `email rejected by resend` but does **not** currently increment `failed`; the counter therefore under-counts email rejections. The `event="start"` series stays empty because the worker has no `start` delivery branch yet.
+- Labels are bounded (2 × 3 × 2), so the series cost is fixed. No per-job labels — delivery details belong to the execution row and logs.
+
+**Consequences.** `rate(freecron_notifications_total{outcome="sent"}[5m])` falling while `freecron_queue_depth{queue="notification"}` rises is the "worker is stuck or failing" signal. Slack failures are countable per event; email failures must still be read from logs until the error path increments the counter too. Adding a delivery type or event means extending the label values deliberately, not inventing a new metric.
+
+---
+
+## D-17 — A bad Slack token degrades delivery; it cannot abort boot
+
+**Status:** adopted, in `slack.service.ts`. Found by a live boot that died on `invalid_auth` before serving a request.
+
+**Context.** `slack.service.ts` constructs the `@slack/web-api` client at import and probes `auth.test()` at import when `NODE_ENV !== "test"` (the import happens through the notification worker, which is part of the composition root). With the placeholder/webhook value in `SLACK_TOKEN`, the promise rejected and surfaced as an unhandled rejection — the process exited instead of starting, even though email delivery and the rest of the app were healthy.
+
+**Decision.** Both the `auth.test()` call and the outer invocation catch their errors and log `warn` (`slack auth test failed`) with `filename`/`functionname`. Nothing re-throws; boot continues. Slack delivery problems then surface per message: the worker logs `slack delivery failed`, increments `freecron_notifications_total{outcome="failed"}`, and BullMQ retries under D-9.
+
+**Consequences.** Startup no longer proves the Slack credentials are valid — a typo or expired token is only visible from the warn line or from failed deliveries. That is the intended trade: alerting is a secondary path, and it may not take the cron platform down. Tests skip the probe under `NODE_ENV=test`; real Slack sends are still exercised only by explicit delivery tests/mocks.

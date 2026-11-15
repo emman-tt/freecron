@@ -23,21 +23,56 @@ export interface FailedMailParams {
   fixUrl: string;
 }
 
+function calendarDate(ms: number): string {
+  return new Date(ms).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+// Renders a timestamp as friendly relative text. Past values read "5 minutes
+// ago"; future values (nextRun) read "in 2 hours"/"Tomorrow" rather than
+// collapsing into "just now". Non-date strings are returned untouched so
+// pre-formatted fixtures keep working.
 function fmt(iso: string): string {
   const then = new Date(iso).getTime();
-  const now = Date.now();
-  const diff = now - then; // ms
-  if (diff < 0) return "just now";
+  if (Number.isNaN(then)) return iso;
+  const diff = Date.now() - then; // ms; negative means future
+  const abs = Math.abs(diff);
   const minute = 60_000;
   const hour = 3_600_000;
   const day = 86_400_000;
-  if (diff < minute * 2) return "just now";
-  if (diff < minute * 60) return `${Math.floor(diff / minute)} minute${Math.floor(diff / minute) !== 1 ? "s" : ""} ago`;
+
+  if (abs < minute * 2) return "just now";
+
+  if (diff < 0) {
+    if (abs < minute * 60) {
+      const minutes = Math.floor(abs / minute);
+      return `in ${minutes} minute${minutes === 1 ? "" : "s"}`;
+    }
+    if (abs < hour * 2) return "in an hour";
+    if (abs < hour * 24) {
+      const hours = Math.floor(abs / hour);
+      return `in ${hours} hour${hours === 1 ? "" : "s"}`;
+    }
+    if (abs < day * 2) return "Tomorrow";
+    return `on ${calendarDate(then)}`;
+  }
+
+  if (diff < minute * 60) {
+    const minutes = Math.floor(diff / minute);
+    return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  }
   if (diff < hour * 2) return "an hour ago";
-  if (diff < hour * 24) return `${Math.floor(diff / hour)} hour${Math.floor(diff / hour) !== 1 ? "s" : ""} ago`;
+  if (diff < hour * 24) {
+    const hours = Math.floor(diff / hour);
+    return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  }
   if (diff < day * 2) return "Yesterday";
-  const d = new Date(then);
-  return d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+  return calendarDate(then);
 }
 
 export function successMail(params: SuccessMailParams) {

@@ -63,4 +63,22 @@ describe("email templates", () => {
     expect(html).toContain("after 1 retry");
     expect(html).toContain("retried 1 time");
   });
+
+  it("should render ISO timestamps as relative past/future text", () => {
+    const html = successMail({
+      ...successParams,
+      runAt: new Date(Date.now() - 5 * 60_000).toISOString(),
+      nextRun: new Date(Date.now() + 2 * 3_600_000).toISOString(),
+    });
+
+    expect(html).toContain("your 5 minutes ago run finished");
+    expect(html).toContain("next run in 2 hours");
+  });
+
+  it("should pass through values that are not dates", () => {
+    const html = successMail(successParams);
+
+    expect(html).toContain("next run tomorrow at 02:00");
+    expect(html).not.toContain("Invalid Date");
+  });
 });

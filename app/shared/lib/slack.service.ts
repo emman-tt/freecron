@@ -23,7 +23,7 @@ async function runAuth() {
         functionname: "runAuth",
         error: error instanceof Error ? error.message : String(error),
       },
-      "slack auth test failed - continuing without verification (likely invalid token)",
+      "slack auth test failed",
     );
   }
 }

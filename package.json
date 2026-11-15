@@ -6,9 +6,9 @@
   "scripts": {
     "tsc": "tsc",
     "dev": "tsx watch -r dotenv/config ./app/index.ts | pnpm exec pino-pretty",
-    "prod": "tsc && node ./build/index.js",
-    "test": "NODE_OPTIONS=--experimental-vm-modules dotenv -e .env.test jest --runInBand ",
-    "test-pino": "NODE_OPTIONS=--experimental-vm-modules dotenv -e .env.test jest --runInBand | pnpm exec pino-pretty"
+    "prod": "tsc && node ./dist/app/index.js",
+    "test": "set -a && . ./.env.test && set +a && NODE_OPTIONS=--experimental-vm-modules pnpm exec jest --runInBand",
+    "test-pino": "set -a && . ./.env.test && set +a && NODE_OPTIONS=--experimental-vm-modules pnpm exec jest --runInBand | pnpm exec pino-pretty"
   },
   "keywords": [],
   "author": "",

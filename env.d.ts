@@ -15,6 +15,7 @@ declare global {
       CLIENT_URL: string;
       RESEND_API_KEY: string;
       EMAIL_FROM: string;
+      FRONTEND_URL: string;
       SLACK_TOKEN: string;
     }
   }

@@ -24,6 +24,7 @@ app/
 │   ├── repositories/   # shared cache repository
 │   └── helpers/        # test-setup.ts (SetupTestInfra / CleanTestInfra / TeardownTestInfra)
 └── database/           # db.schema.ts (drizzle), db.config.ts (client + closeDb)
+client/                 # React + Vite SPA — see client/README.md
 docs/                   # decision record (docs/decisions.md) + testing reference (docs/testing.md)
 ```
 
@@ -33,7 +34,7 @@ pino everywhere, zero `console.*` in `app/`. Four roots: `reqLogger` (`request-j
 
 ## Metrics
 
-`GET /metrics` — unauthenticated Prometheus scrape (0.0.4 text), on the `@prometheus-io/client` registry: process defaults, `freecron_executions_total`, and duration histograms `freecron_http_fetch_duration_seconds` (per attempt, by `outcome`) and `freecron_execution_duration_seconds` (terminal runs only) — D-14 in `docs/decisions.md`.
+`GET /metrics` — unauthenticated Prometheus scrape (0.0.4 text), on the `@prometheus-io/client` registry: process defaults, `freecron_executions_total`, duration histograms `freecron_http_fetch_duration_seconds` (per attempt, by `outcome`) and `freecron_execution_duration_seconds` (terminal runs only) — D-14 — plus `freecron_notifications_total` (`type`/`event`/`outcome`) — D-16 — and `freecron_queue_depth` per `(queue, state)`.
 
 The scrape pipeline (D-14) ships with the compose stack: `docker compose up -d prometheus` starts Prometheus on `localhost:9090` using `metrics/prometheus.yml`, which scrapes the dev server's `/metrics` every 5s via `host.docker.internal:5002`. The app must be running locally first (`pnpm run dev`). Queue depth (`queueDepth`, set every 15s from `app/index.ts`) is exposed as `freecron_queue_depth` per `(queue, state)`. Check the target is `UP` at `http://localhost:9090/targets`, then query e.g. `rate(freecron_executions_total[5m])`.
 
@@ -41,11 +42,24 @@ The scrape pipeline (D-14) ships with the compose stack: `docker compose up -d p
 
 All domain errors extend `DomainError` (`app/shared/errors/business.errors.ts`) and render through one `errorHandler` (`http.errors.ts`): `audit`-style body `{status, error, message}`. Known mapping: validation → 400, unauthenticated → 401, permission/ownership → **403** (D-2), missing → 404, business rules → 422, internal → 500.
 
+## API surface
+
+All `/api/*` routes except `/api/auth/*` sit behind `requestLogger` + `authMiddleware`. Responses use the `{status, data, meta?}` envelope; errors use the model above.
+
+| Area | Routes |
+| --- | --- |
+| Auth | better-auth at `/api/auth/*` |
+| Jobs | `POST /api/jobs`, `GET /api/jobs`, `GET /api/jobs/stats`, `GET/PUT/PATCH/DELETE /api/jobs/:jobId`, `POST /api/jobs/:jobId` (run now) |
+| Executions | `GET /api/executions?jobId=…`, `GET /api/executions/stats?jobId=…` |
+| Notifications | `POST /api/notifications`, `GET /api/notifications?jobId=…`, `GET/PATCH/PUT/DELETE /api/notifications/:notificationId` |
+| Users | `GET/PUT/DELETE /api/users/me` |
+| Metrics | `GET /metrics` (unauthenticated) |
+
 ## Running
 
 ```sh
 pnpm run dev    # tsx watch + pino-pretty (local dev; reads .env)
-pnpm run prod   # tsc && node ./build/index.js
+pnpm run prod   # tsc && node ./dist/app/index.js
 pnpm run test   # full jest suite (see testing section)
 ```
 
