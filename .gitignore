@@ -15,7 +15,7 @@
 
 # production
 /dist
-
+/logs
 /drizzle
 
 # misc

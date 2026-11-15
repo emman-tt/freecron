@@ -41,7 +41,7 @@ export function Shell() {
       {/*sticky + h-screen: stays in view while main scrolls*/}
       <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col gap-8 bg-card p-5 pt-8">
         <div className="flex items-center gap-2">
-          <span className="h-7 w-7 rounded-full bg-primary" />
+          <img src="/logo-mark.svg" alt="FreeCron" className="h-7 w-7" />
           <span className="text-[20px] font-bold text-[#0a0a0a]">FreeCron</span>
         </div>
         <nav className="flex flex-1 flex-col gap-1.5 overflow-y-auto">

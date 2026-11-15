@@ -8,7 +8,6 @@ import {
 
 export const register = new Registry();
 
-//Process defaults (heap, event loop, GC …) scraped alongside freecron's own
 collectDefaultMetrics({ register });
 
 export const executionCounter = new Counter({
@@ -25,10 +24,7 @@ export const queueDepth = new Gauge({
   registers: [register],
 });
 
-//Worker's external HTTP fetch to the job target, in seconds. Recorded on
-//every attempt: outcome distinguishes a received response from an exchange
-//that never produced a usable HTTP status. No jobId label — unbounded
-//per-job time series are a permanent scrape cost; per-job numbers live in DB
+
 export const httpFetchDuration = new Histogram({
   name: "freecron_http_fetch_duration_seconds",
   help: "duration of the worker external HTTP fetch to job targets",
@@ -37,9 +33,6 @@ export const httpFetchDuration = new Histogram({
   registers: [register],
 });
 
-//End-to-end in-process execution duration, in seconds — create-to-terminal
-//inside the Processor. Intermediate attempts observe nothing (their fetch
-//leg is already above); queue stay-time is not in-process time
 export const executionDuration = new Histogram({
   name: "freecron_execution_duration_seconds",
   help: "duration of a terminal execution inside the worker",
