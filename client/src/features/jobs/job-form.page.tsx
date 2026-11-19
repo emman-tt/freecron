@@ -2,7 +2,7 @@
 //backend-owned infra rules, never edited here. Client-side validation mirrors
 //the backend's Zod messages so users never round-trip to learn them
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { Clock } from "lucide-react";
 import { useJob, useSaveJob, useRunNow, useToggleJob, useDeleteJob } from "./hooks/job.hooks";
 import type { CreateJobDTO } from "./api/job.types";
@@ -32,10 +32,14 @@ const cronPresets = [
 
 export function JobFormPage() {
   const { jobId } = useParams();
+  const [params] = useSearchParams();
   const editing = jobId !== undefined;
+  // /jobs/new?from=12 — duplicate prefills from an existing job
+  const sourceId = Number(params.get("from") ?? 0);
+  const duplicating = !editing && sourceId > 0;
   const navigate = useNavigate();
 
-  const existing = useJob(Number(jobId ?? 0));
+  const existing = useJob(editing ? Number(jobId) : sourceId);
   const save = useSaveJob(editing ? Number(jobId) : undefined);
   const clone = useSaveJob(undefined);
   const runNow = useRunNow();
@@ -55,12 +59,12 @@ export function JobFormPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  //Prefill from the fetched job in edit mode
+  //Prefill from the fetched job in edit mode, or from ?from= in duplicate mode
   useEffect(() => {
     const j = existing.data;
     if (!j) return;
     setForm({
-      name: j.name,
+      name: duplicating ? `${j.name} (copy)` : j.name,
       description: j.description ?? "",
       cronExpression: j.cronExpression,
       httpCommand: j.httpCommand,
@@ -75,7 +79,7 @@ export function JobFormPage() {
         value: typeof value === "string" ? value : JSON.stringify(value),
       })),
     );
-  }, [existing.data]);
+  }, [existing.data, duplicating]);
 
   const buildPayload = (): CreateJobDTO => ({
     name: form.name,
@@ -151,7 +155,7 @@ export function JobFormPage() {
     });
   }
 
-  if (editing && existing.isLoading) {
+  if ((editing || duplicating) && existing.isLoading) {
     return <p className="text-[13px] text-muted">Loading job…</p>;
   }
 
@@ -326,7 +330,15 @@ export function JobFormPage() {
           <Link to="/jobs" className="text-[13px] text-muted hover:text-[#0a0a0a]">
             ←  Jobs
           </Link>
-          <h1 className="text-[28px] font-bold text-[#0a0a0a]">Add Cron Job</h1>
+          <h1 className="text-[28px] font-bold text-[#0a0a0a]">
+            {duplicating ? "Duplicate Job" : "Add Cron Job"}
+          </h1>
+          {duplicating && (
+            <p className="text-[12px] text-muted">
+              Prefilled from {existing.data?.name ?? "the source job"}. Saving creates a new
+              job — the original is untouched.
+            </p>
+          )}
         </>
       )}
 

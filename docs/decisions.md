@@ -47,8 +47,8 @@ Central list of architectural and behavioral decisions in freecron, each with th
 **Context.** BullMQ does not close connections callers pass to `Queue`/`Worker`. Connections created by `RedisConnection()` in `app/infra.ts` were therefore immortal — three leaked sockets, and jest never exited.
 
 **Decision.**
-- Every BullMQ-backed wrapper (`ScheduleQueue`, `NotificationQueue`, `ScheduleWorker`) stores the connection it was given and `quit()`s it in its `close()` after the BullMQ close, guarded by `status !== "end"` so shared or already-defunct instances are skipped.
-- App-level teardown goes through one exported `closeInfra()` in `app/infra.ts`: watchman, schedule worker, both queues, cache redis.
+- Every BullMQ-backed wrapper (`ScheduleQueue`, `NotificationQueue`, `ScheduleWorker`, `NotificationWorker`) stores the connection it was given and `quit()`s it in its `close()` after the BullMQ close, guarded by `status !== "end"` so shared or already-defunct instances are skipped.
+- App-level teardown goes through one exported `closeInfra()` in `app/infra.ts`: watchman, schedule worker, notification worker, both queues, cache redis.
 - Tests hand BullMQ wrappers `redis.duplicate()` — never the shared suite redis — so a wrapper's own close never interrupts fixture teardown in `TeardownTestInfra`.
 
 **Consequences.** `close()` on the wrappers is the single socket-clean path; adding a new BullMQ surface means following the wrapper pattern and including it in `closeInfra()`.
@@ -63,7 +63,7 @@ Central list of architectural and behavioral decisions in freecron, each with th
 
 **Decision.** Serial execution; suite isolation is by `TRUNCATE … RESTART IDENTITY CASCADE` + `flushdb` per test, never by database-per-worker.
 
-**Consequences.** No parallel speedup; correctness first. Any long-running dev server (with an app instance and a watchman) must be off during test runs — it consumes from the same Redis and truncates out from under suites.
+**Consequences.** No parallel speedup; correctness first. A dev server started against the **test** environment (same Postgres/Redis as the suite) must be off during test runs — its watchman would schedule and process the jobs the fixtures truncate out from under. The default `pnpm run dev` reads `.env` and points at the prod stack (`:5432`/`:6379`), so it does not collide with `.env.test` (`:5431`/`:6378`), but keeping it off avoids mixed-env confusion.
 
 ---
 

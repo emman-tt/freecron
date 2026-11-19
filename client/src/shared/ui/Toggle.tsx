@@ -1,4 +1,4 @@
-//Pause/resume toggle — 32×18 track, green knob when on
+//Pause/resume toggle — green track when on, grey when off, white knob
 export function Toggle({
   on,
   onChange,
@@ -14,13 +14,13 @@ export function Toggle({
       aria-label={label ?? (on ? "Pause job" : "Resume job")}
       aria-pressed={on}
       onClick={onChange}
-      className={`h-[18px] w-8 shrink-0 rounded-full border-[1.5px] bg-white p-[2px] transition-colors ${
-        on ? "border-primary" : "border-border"
+      className={`h-5 w-9 shrink-0 rounded-full p-[3px] transition-colors ${
+        on ? "bg-live" : "bg-border"
       }`}
     >
       <span
-        className={`block h-2.5 w-2.5 rounded-full transition ${
-          on ? "translate-x-[15px] bg-success" : "bg-border"
+        className={`block h-3.5 w-3.5 rounded-full bg-white shadow-[0_1px_2px_rgba(10,10,10,0.18)] transition-transform ${
+          on ? "translate-x-4" : "translate-x-0"
         }`}
       />
     </button>

@@ -26,6 +26,7 @@ import { failedSlack, successSlack } from "../../shared/helpers/slack.js";
 
 export class NotificationWorker {
   private worker: Worker;
+  private connection: Redis;
   private notif: NotificationService;
   private jobService: JobService;
   private executionService: ExecutionService;
@@ -36,6 +37,7 @@ export class NotificationWorker {
     jobService: JobService,
     executionService: ExecutionService,
   ) {
+    this.connection = connection;
     this.notif = notif;
     this.jobService = jobService;
     this.executionService = executionService;
@@ -54,6 +56,10 @@ export class NotificationWorker {
 
   async close() {
     await this.worker.close();
+    //BullMQ does not quit connections passed to it by the caller
+    if (this.connection.status !== "end") {
+      await this.connection.quit();
+    }
   }
 
   async Processor(job: Job) {

@@ -7,6 +7,8 @@ export function useExecutions(jobId: number, page: number, limit?: number) {
     queryKey: ["executions", String(jobId), page, limit ?? null],
     queryFn: () => executionApi.list(jobId, page, limit),
     refetchInterval: 10_000,
+    //no job selected → don't hit /api/executions?jobId=0
+    enabled: jobId > 0,
   });
 }
 

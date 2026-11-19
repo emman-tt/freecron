@@ -15,9 +15,11 @@ unit tests additionally spy on the Resend and Slack SDKs.
 
 - A populated `.env.test`. It points at the test services, uses a dummy Resend
   key, a placeholder `SLACK_TOKEN`, and sets `NODE_ENV=test`.
-- No dev server may be running. A live `pnpm run dev` instance consumes from the
-  same Redis and its watchman processes jobs underneath the test workers.
-  Stop it before running the suite.
+- No dev server may be running against the **test** stack. The default
+  `pnpm run dev` reads `.env` (prod Postgres `:5432` / Redis `:6379`) and is
+  separate from `.env.test` (`:5431` / `:6378`). If you point a dev server at
+  `.env.test`, its watchman schedules and processes jobs underneath the test
+  fixtures — stop it before running the suite.
 
 ## Commands
 
@@ -67,9 +69,9 @@ wrapper `redis.duplicate()` — never the shared suite Redis — so a wrapper's
 `close()` cannot interrupt fixture teardown.
 
 App-level teardown goes through one exported `closeInfra()` (`app/infra.ts`):
-watchman, schedule worker, both queues, cache Redis. Known gap:
-`NotificationWorker` shares `notifRedis` with `NotificationQueue` and is not
-awaited by `closeInfra()`; `NotifQueue.close()` quits the shared connection.
+watchman, schedule worker, notification worker, both queues, cache Redis. Each
+worker/queue quits its own connection, so there is no shared-socket ordering
+hazard.
 
 ## Environment quirks
 

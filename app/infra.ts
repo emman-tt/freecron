@@ -26,6 +26,7 @@ import { NotificationWorker } from "./modules/Notification/notification.worker.j
 const cacheRedis = RedisConnection();
 const scheduleRedis = RedisConnection();
 const notifRedis = RedisConnection();
+const notifWorkerRedis = RedisConnection();
 const workerRedis = RedisConnection();
 
 const cacheRepo = new SharedCacheRepository(cacheRedis);
@@ -52,7 +53,7 @@ const worker = new ScheduleWorker(
   notificationService,
 );
 const notifWorker = new NotificationWorker(
-  notifRedis,
+  notifWorkerRedis,
   notificationService,
   jobService,
   executionService,
@@ -81,6 +82,7 @@ export async function checkInfra() {
 export async function closeInfra() {
   scheduler.closeWatchman();
   await worker.close();
+  await notifWorker.close();
   await scheduleQueue.close();
   await NotifQueue.close();
   await cacheRepo.close();

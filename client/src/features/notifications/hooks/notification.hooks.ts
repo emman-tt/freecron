@@ -7,22 +7,7 @@ export function useJobRules(jobId: number) {
   return useQuery({
     queryKey: ["notifications", jobId],
     queryFn: () => notificationApi.listByJob(jobId),
-  });
-}
-
-//fan out over jobs, labeling each group with the job name
-export function useAllRules(jobIds: number[], nameOf: (jobId: number) => string) {
-  return useQuery({
-    queryKey: ["notifications-all", jobIds],
-    queryFn: async () => {
-      const pages = await Promise.all(jobIds.map((id) => notificationApi.listByJob(id)));
-      return jobIds.map((jobId, i) => ({
-        jobId,
-        name: nameOf(jobId),
-        rules: pages[i],
-      }));
-    },
-    enabled: jobIds.length > 0,
+    enabled: jobId > 0,
   });
 }
 
@@ -43,6 +28,14 @@ export function useToggleRule() {
   const invalidate = useInvalidateRules();
   return useMutation({
     mutationFn: (notificationId: number) => notificationApi.toggle(notificationId),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteRule() {
+  const invalidate = useInvalidateRules();
+  return useMutation({
+    mutationFn: (notificationId: number) => notificationApi.delete(notificationId),
     onSuccess: invalidate,
   });
 }

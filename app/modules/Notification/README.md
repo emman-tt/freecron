@@ -32,10 +32,10 @@ Queue health is on the shared gauge set: `freecron_queue_depth{queue="notificati
 
 ## Startup and operations
 
-- `app/infra.ts` constructs `NotificationWorker` as `notifWorker` alongside `NotifQueue`, both on the same `notifRedis` connection. Importing the composition root starts the worker — there is no separate process to launch.
+- `app/infra.ts` constructs `NotificationWorker` as `notifWorker` alongside `NotifQueue`, each on its own Redis connection (`notifWorkerRedis` / `notifRedis`). Importing the composition root starts the worker — there is no separate process to launch.
 - The queue only drains when that Redis is reachable (`REDIS_URL`, logical DB 1; test Redis is `:6378`). If Redis is down or the worker is not consuming, `freecron_queue_depth{queue="notification",state="waiting"}` climbs while `rate(freecron_notifications_total{outcome="sent"}[5m])` stays at zero.
 - `slack.service.ts` probes `auth.test()` at import unless `NODE_ENV=test`; an invalid token only logs `slack auth test failed` and boot continues (D-17). Per-message Slack failures then show up in logs and in the `failed` counter.
-- Known teardown gap: `closeInfra()` currently closes the watchman, schedule worker, both queues, and the cache redis, but does not await `notifWorker.close()`. The shared `notifRedis` is quit by `NotifQueue.close()`. Adding `notifWorker.close()` before the queue (or giving the worker its own connection) is the clean follow-up (D-4).
+- `NotificationWorker.close()` closes the BullMQ worker and then quits its own connection; `closeInfra()` awaits it before closing the queues and cache redis (D-4).
 
 ## Notes for tests
 

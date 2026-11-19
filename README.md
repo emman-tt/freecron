@@ -2,7 +2,7 @@
 
 Cron-job monitoring platform: users define HTTP jobs on cron schedules, a worker executes them on time, records every run (execution log/retries/durations/failures), and alerts through email or Slack by rules.
 
-**Stack:** TypeScript (ESM, `verbatimModuleSyntax`-style `.js` import specifiers), Express 5, better-auth + Drizzle ORM + Postgres, BullMQ + ioredis, pino, Jest 30 (ts-jest ESM). Node ≥ 26 (top-level cron-parser/better-auth behavior validated there).
+**Stack:** TypeScript (ESM, `verbatimModuleSyntax`-style `.js` import specifiers), Express 5, better-auth + Drizzle ORM + Postgres, BullMQ + ioredis, pino, Jest 30 (ts-jest ESM). Node ≥ 26 (top-level cron-parser/better-auth behavior validated there). Client: React 19 + Vite 8 + TanStack Query 5 + Tailwind 4 — see `client/README.md`.
 
 ## Layout
 
@@ -74,4 +74,4 @@ set -a; source .env.test; set +a
 NODE_OPTIONS=--experimental-vm-modules pnpm exec jest --runInBand
 ```
 
-Suite-shaped constraints worth restating in one line: tests run **serially** because all suites share one Postgres/Redis as their fixture surface, and any live dev-server instance of this app must be shut down before a test run — it consumes from the same Redis and its `watchman` processes jobs underneath the workers.
+Suite-shaped constraints worth restating in one line: tests run **serially** because all suites share one Postgres/Redis as their fixture surface. A dev server pointed at `.env.test` must be shut down before a test run — its watchman would process jobs underneath the workers. The default `pnpm run dev` uses `.env` (prod stack) and is separate from the test stack.
