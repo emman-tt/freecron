@@ -14,6 +14,7 @@ from the .pen file; components must use these, never hardcoded hexes */
   --color-success-strong: #15803d;
   --color-success-soft: #eaf7ee;
   --color-live: #22c55e;
+  --color-chart-bar: #d6d3d1;
   --color-warning: #a16207;
   --color-warning-soft: #fdf6e3;
   --color-warning-border: #f0dfae;

@@ -19,9 +19,11 @@ import type {
 import { RunsStrip } from "../../executions/components/runs-strip";
 import { RecentRunsTable } from "../../executions/components/recent-runs-table";
 import { ExecutionsTable } from "../../executions/components/executions-table";
+import { useExecutions } from "../../executions/hooks/execution.hooks";
 import { useJobRules, useToggleRule } from "../../notifications/hooks/notification.hooks";
 import { Toggle } from "../../../shared/ui/Toggle";
 import { durationLabel, formatIn, hm, mask } from "../../../shared/lib/format";
+import { headerEntries } from "../../../shared/lib/headers";
 
 const tabs = ["Overview", "Runs", "Config", "Alerts"] as const;
 type Tab = (typeof tabs)[number];
@@ -131,7 +133,7 @@ export function DetailPanel({
     ? Math.max(0, new Date(job.nextRunAt).getTime() - now)
     : null;
   const latest = runs[0];
-  const headers = Object.entries(job.httpHeader ?? {});
+  const headers = headerEntries(job.httpHeader ?? {});
   const payloadKeys = Object.keys(job.httpBody ?? {});
   const successPct =
     stats?.uptimePct !== null && stats?.uptimePct !== undefined
@@ -203,8 +205,7 @@ export function DetailPanel({
               <span className="mx-1.5 text-border">|</span>
               {successPct} success over {stats.totalRuns.toLocaleString()} runs
             </>
-          )}
-        </p>
+          )}        </p>
       </div>
 
       {/*Tabs*/}
@@ -340,7 +341,7 @@ export function DetailPanel({
         </div>
       )}
 
-      {tab === "Runs" && <ExecutionsTable jobId={job.id} />}
+      {tab === "Runs" && <JobLogs key={job.id} job={job} />}
 
       {tab === "Config" && (
         <div className="flex flex-col gap-4">
@@ -441,5 +442,23 @@ export function DetailPanel({
         </div>
       )}
     </div>
+  );
+}
+
+//Runs tab in the dashboard: the same paged logs table as the job report.
+//Kept as its own component so page state resets when the selected job changes.
+function JobLogs({ job }: { job: Job }) {
+  const [page, setPage] = useState(1);
+  const logs = useExecutions(job.id, page);
+
+  return (
+    <ExecutionsTable
+      job={job}
+      runs={logs.data?.data ?? []}
+      meta={logs.data?.meta}
+      loading={logs.isLoading}
+      page={page}
+      onPage={setPage}
+    />
   );
 }

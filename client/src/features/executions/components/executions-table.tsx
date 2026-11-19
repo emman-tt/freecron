@@ -1,31 +1,68 @@
-//Logs tab (design "RU Logs"): status dots, verbose start times, View ▾
-//output box, numbered pagination
-import { Fragment, useState } from "react";
-import { useExecutions } from "../hooks/execution.hooks";
+//Logs tab — every execution for one job. Status chips + search filter the
+//loaded page (the API has no status/search query), the latency bar compares
+//a run to the slowest on the page, and a row expands into request/response
+//with Copy as cURL and Re-run.
+//
+//Counts on the chips describe this page, not all history — the header says
+//"showing x–y of z" so the scope stays honest.
+import { useState } from "react";
+import { Copy, RotateCw } from "lucide-react";
 import type { Execution } from "../api/execution.types";
+import type { Job } from "../../jobs/api/job.types";
+import type { PaginationMeta } from "../../../shared/api/http";
+import { useRunNow } from "../../jobs/hooks/job.hooks";
+import { headerEntries, headerValue } from "../../../shared/lib/headers";
 
-//dot: green success, gray running (in flight), red failed/timeout
-const dotClass: Record<Execution["status"], string> = {
-  success: "bg-success",
-  running: "bg-muted",
-  failed: "bg-danger",
-  timeout: "bg-danger",
+const STATUS_TEXT: Record<number, string> = {
+  200: "OK",
+  201: "Created",
+  202: "Accepted",
+  204: "No content",
+  400: "Bad request",
+  401: "Unauthorized",
+  403: "Forbidden",
+  404: "Not found",
+  409: "Conflict",
+  429: "Too many requests",
+  500: "Server error",
+  502: "Bad gateway",
+  503: "Unavailable",
+  504: "Gateway timeout",
 };
 
-//"Sat, 28 Nov 2026 15:38:30" — the design's verbose start time
-function fullDate(iso: string): string {
-  return new Date(iso).toLocaleString("en-GB", {
+type Filter = "all" | "success" | "failed";
+
+function isFailed(run: Execution): boolean {
+  return run.status === "failed" || run.status === "timeout";
+}
+
+//"Sun 15 Nov, 20:00:00" — the logs design's verbose start time
+function startTime(iso: string): string {
+  const d = new Date(iso);
+  const day = d.toLocaleDateString("en-GB", {
     weekday: "short",
     day: "numeric",
     month: "short",
-    year: "numeric",
+  });
+  const time = d.toLocaleTimeString("en-GB", {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
   });
+  return `${day}, ${time}`;
 }
 
-//‹‹ ‹ 1 2 3 … last › ›› — numbered pages with an ellipsis window
+function statusLabel(run: Execution): string {
+  if (run.statusCode) return String(run.statusCode);
+  return run.status;
+}
+
+function statusClass(run: Execution): string {
+  if (run.status === "success") return "text-success-strong";
+  if (run.status === "running") return "text-warning";
+  return "text-danger";
+}
+
 function pageList(page: number, total: number): Array<number | "…"> {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
   const wanted = new Set(
@@ -42,134 +79,380 @@ function pageList(page: number, total: number): Array<number | "…"> {
   return out;
 }
 
-export function ExecutionsTable({ jobId }: { jobId: number }) {
-  const [page, setPage] = useState(1);
-  const [openId, setOpenId] = useState<number | null>(null);
+function requestPath(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.pathname}${parsed.search}`;
+  } catch {
+    return url;
+  }
+}
 
-  const runs = useExecutions(jobId, page);
-  const rows = runs.data?.data ?? [];
-  const meta = runs.data?.meta;
-  const shown =
-    meta && rows.length > 0
-      ? `${(meta.page - 1) * meta.limit + 1}-${(meta.page - 1) * meta.limit + rows.length} of ${meta.total}`
-      : "0 of 0";
+function contentLength(body: Record<string, unknown> | null | undefined): number {
+  return body ? Object.keys(body).length : 0;
+}
+
+export function ExecutionsTable({
+  job,
+  runs,
+  meta,
+  loading,
+  page,
+  onPage,
+}: {
+  job: Job;
+  runs: Execution[];
+  meta?: PaginationMeta;
+  loading: boolean;
+  page: number;
+  onPage: (page: number) => void;
+}) {
+  const [filter, setFilter] = useState<Filter>("all");
+  const [search, setSearch] = useState("");
+  //“first” = auto-open the newest row until the user explicitly hides/views;
+  //the choice is tied to the page so paging falls back to the new first row
+  const [choice, setChoice] = useState<{ page: number; id: number | null } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const runNow = useRunNow();
+
+  const visible = runs.filter((run) => {
+    if (filter === "success" && run.status !== "success") return false;
+    if (filter === "failed" && !isFailed(run)) return false;
+    if (!search) return true;
+    const haystack = [
+      run.status,
+      run.statusCode ?? "",
+      run.error ?? "",
+      JSON.stringify(run.response ?? {}),
+    ]
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(search.toLowerCase());
+  });
+
+  const open = choice?.page === page ? choice.id : (visible[0]?.id ?? null);
+  const maxDuration = Math.max(...visible.map((run) => run.duration ?? 0), 1);
+  const successCount = runs.filter((run) => run.status === "success").length;
+  const failedCount = runs.filter(isFailed).length;
+
+  const filters: Array<{ key: Filter; label: string; count: number }> = [
+    { key: "all", label: "All", count: runs.length },
+    { key: "success", label: "Success", count: successCount },
+    { key: "failed", label: "Failed", count: failedCount },
+  ];
 
   return (
-    <div className="flex flex-col gap-2 rounded-[16px] bg-card p-4">
-      <p className="text-[13px] font-bold text-[#0a0a0a]">
-        Logs  •  GET /api/executions?jobId={jobId}  •  Showing {shown}
-      </p>
-      {/*table-fixed so long timestamps wrap, never stretch the page*/}
-      <div className="overflow-x-auto">
-        <table className="w-full table-fixed text-left">
-          <colgroup>
-            <col className="w-10" />
-            <col className="w-[55%]" />
-            <col className="w-[18%]" />
-          </colgroup>
-          <thead>
-            <tr className="text-[11px] font-bold text-muted">
-              <th className="p-3" />
-              <th className="p-3">START TIME</th>
-              <th className="p-3">TIME</th>
-              <th className="p-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <Fragment key={row.id}>
-                <tr className="transition-colors hover:bg-muted-bg/60">
-                  <td className="p-3">
-                    <span className={`block h-3.5 w-3.5 rounded-full ${dotClass[row.status]}`} />
-                  </td>
-                  <td className="break-words p-3 pr-6 text-[12px] text-muted">
-                    {fullDate(row.startedAt)}
-                  </td>
-                  <td className="whitespace-nowrap p-3 text-[12px] text-muted">
-                    {row.duration === null ? "—" : `${(row.duration / 1000).toFixed(2)} sec`}
-                  </td>
-                  <td className="whitespace-nowrap p-3 text-right">
-                    <button
-                      onClick={() => setOpenId(openId === row.id ? null : row.id)}
-                      className="rounded-lg bg-muted-bg px-3.5 py-1.5 text-[12px] text-[#0a0a0a] hover:bg-border"
-                    >
-                      {openId === row.id ? "Hide" : "View"} ▾
-                    </button>
+    <div className="flex flex-col gap-3">
+      {/*Filter bar*/}
+      <div
+        className="flex flex-wrap items-center gap-2"
+        title="Counts and filters cover the runs loaded on this page."
+      >
+        {filters.map((item) => (
+          <button
+            key={item.key}
+            onClick={() => setFilter(item.key)}
+            className={`h-10 rounded-[8px] border px-3.5 text-[12.5px] font-medium transition-colors ${
+              filter === item.key
+                ? "border-primary bg-primary text-white"
+                : "border-border bg-card text-ink hover:bg-muted-bg"
+            }`}
+          >
+            {item.label} {item.count}
+          </button>
+        ))}
+
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search status or response"
+          className="h-10 min-w-[220px] flex-1 rounded-[8px] border border-border bg-card px-3.5 text-[13px] text-ink outline-none placeholder:text-muted"
+        />
+
+        <span
+          title="Range filters aren't wired to the API yet — this page shows the latest runs."
+          className="flex h-10 cursor-default items-center rounded-[8px] border border-border bg-card px-3.5 text-[12.5px] text-muted"
+        >
+          All runs
+        </span>
+      </div>
+
+      {/*Table card*/}
+      <div className="overflow-hidden rounded-[16px] border border-border/80 bg-card">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[520px] text-left">
+            <thead>
+              <tr className="text-[10.5px] font-semibold tracking-[0.06em] text-muted uppercase">
+                <th className="w-[32%] px-5 py-4 font-semibold lg:w-[27%]">Start time</th>
+                <th className="w-[14%] px-3 py-4 font-semibold lg:w-[10%]">Status</th>
+                <th className="w-[15%] px-3 py-4 font-semibold lg:w-[12%]">Duration</th>
+                <th className="hidden px-3 py-4 lg:table-cell lg:w-[30%]" />
+                <th className="w-[100px] px-5 py-4" />
+              </tr>
+            </thead>
+            <tbody>
+              {loading &&
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-t border-border/80">
+                    <td className="px-5 py-5">
+                      <span className="block h-3.5 w-40 animate-pulse rounded bg-border/70" />
+                    </td>
+                    <td className="px-3 py-5">
+                      <span className="block h-3.5 w-10 animate-pulse rounded bg-border/60" />
+                    </td>
+                    <td className="px-3 py-5">
+                      <span className="block h-3.5 w-12 animate-pulse rounded bg-border/60" />
+                    </td>
+                    <td className="px-3 py-5" colSpan={2}>
+                      <span className="block h-1.5 w-full max-w-[200px] animate-pulse rounded-full bg-border/60" />
+                    </td>
+                  </tr>
+                ))}
+
+              {!loading &&
+                visible.map((run) => {
+                  const expanded = run.id === open;
+                  return (
+                    <RowGroup
+                      key={run.id}
+                      run={run}
+                      job={job}
+                      expanded={expanded}
+                      maxDuration={maxDuration}
+                      copied={copied}
+                      rerunning={runNow.isPending}
+                      onToggle={() => setChoice({ page, id: expanded ? null : run.id })}
+                      onCopy={() => {
+                        void navigator.clipboard.writeText(curlFor(job)).then(() => {
+                          setCopied(true);
+                          window.setTimeout(() => setCopied(false), 1500);
+                        });
+                      }}
+                      onRerun={() => runNow.mutate(job.id)}
+                    />
+                  );
+                })}
+
+              {!loading && visible.length === 0 && (
+                <tr className="border-t border-border/80">
+                  <td colSpan={5} className="px-5 py-12 text-center">
+                    <p className="text-[13px] font-medium text-ink">
+                      {runs.length === 0 ? "No runs yet" : "No runs match this filter"}
+                    </p>
+                    <p className="mt-1 text-[12px] text-muted">
+                      {runs.length === 0
+                        ? "Run this job once and its history starts here."
+                        : "Try “All”, a different status, or a shorter search."}
+                    </p>
                   </td>
                 </tr>
-                {openId === row.id && <OutputRow execution={row} />}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {runs.isLoading && <p className="p-3 text-[13px] text-muted">Loading runs…</p>}
-      {!runs.isLoading && rows.length === 0 && (
-        <p className="p-3 text-[13px] text-muted">No runs yet — use Run now to make one.</p>
-      )}
-      {meta && meta.totalPages > 1 && (
-        <div className="flex items-center gap-2.5 px-1.5 pb-1 pt-2 text-[12px]">
-          <span className="text-muted">Page {meta.page} of {meta.totalPages}</span>
-          <div className="flex-1" />
-          <div className="flex items-center gap-2 font-bold text-[#0a0a0a]">
-            <button disabled={!meta.hasPrev} onClick={() => setPage(1)}>
-              ‹‹
-            </button>
-            <button disabled={!meta.hasPrev} onClick={() => setPage(meta.page - 1)}>
-              ‹
-            </button>
-            {pageList(meta.page, meta.totalPages).map((p, i) =>
-              p === "…" ? (
-                <span key={`e${i}`} className="text-muted">…</span>
-              ) : (
-                <button
-                  key={i}
-                  onClick={() => setPage(p)}
-                  className={p === meta.page ? "" : "text-muted"}
-                >
-                  {p}
-                </button>
-              ),
-            )}
-            <button disabled={!meta.hasNext} onClick={() => setPage(meta.page + 1)}>
-              ›
-            </button>
-            <button disabled={!meta.hasNext} onClick={() => setPage(meta.totalPages)}>
-              ››
-            </button>
-          </div>
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+
+        {meta && meta.totalPages > 1 && (
+          <div className="flex items-center gap-2.5 border-t border-border/80 px-5 py-3 text-[12px]">
+            <span className="text-muted">
+              Page {meta.page} of {meta.totalPages}
+            </span>
+            <div className="flex-1" />
+            <div className="flex items-center gap-2 font-semibold text-ink">
+              <button disabled={!meta.hasPrev} onClick={() => onPage(1)} className="disabled:opacity-30">
+                ‹‹
+              </button>
+              <button
+                disabled={!meta.hasPrev}
+                onClick={() => onPage(meta.page - 1)}
+                className="disabled:opacity-30"
+              >
+                ‹
+              </button>
+              {pageList(meta.page, meta.totalPages).map((p, i) =>
+                p === "…" ? (
+                  <span key={`e${i}`} className="text-muted">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={i}
+                    onClick={() => onPage(p)}
+                    className={p === meta.page ? "" : "text-muted hover:text-ink"}
+                  >
+                    {p}
+                  </button>
+                ),
+              )}
+              <button
+                disabled={!meta.hasNext}
+                onClick={() => onPage(meta.page + 1)}
+                className="disabled:opacity-30"
+              >
+                ›
+              </button>
+              <button
+                disabled={!meta.hasNext}
+                onClick={() => onPage(meta.totalPages)}
+                className="disabled:opacity-30"
+              >
+                ››
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-//Output box — headline "Output • statusCode: 200 • success", the taxonomy
-//error string on failures, then the stored response headers + body
-function OutputRow({ execution }: { execution: Execution }) {
-  const headline = `Output  •  statusCode: ${execution.statusCode ?? "—"}  •  ${execution.status}`;
-  const headers = execution.response?.headers as Record<string, string> | undefined;
-  const headerLine = headers
-    ? Object.entries(headers)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join("  •  ")
-    : null;
+function curlFor(job: Job): string {
+  const headers = headerEntries(job.httpHeader).map(
+    ([name, value]) => `-H '${name}: ${value}'`,
+  );
+  const body = contentLength(job.httpBody)
+    ? [`-d '${JSON.stringify(job.httpBody)}'`]
+    : [];
+  return [`curl -X ${job.httpMethod}`, `'${job.httpCommand}'`, ...headers, ...body].join(" ");
+}
+
+function RowGroup({
+  run,
+  job,
+  expanded,
+  maxDuration,
+  copied,
+  rerunning,
+  onToggle,
+  onCopy,
+  onRerun,
+}: {
+  run: Execution;
+  job: Job;
+  expanded: boolean;
+  maxDuration: number;
+  copied: boolean;
+  rerunning: boolean;
+  onToggle: () => void;
+  onCopy: () => void;
+  onRerun: () => void;
+}) {
+  const body = run.response?.body;
+  const contentType = headerValue(job.httpHeader, "content-type");
+
   return (
-    <tr>
-      <td colSpan={5} className="p-3">
-        <div className="flex flex-col gap-2 rounded-xl bg-muted-bg p-4">
-          <p className="text-[12px] font-bold text-[#0a0a0a]">{headline}</p>
-          {execution.error && <p className="text-[11px] text-danger">{execution.error}</p>}
-          {headerLine && <p className="text-[11px] text-muted">{headerLine}</p>}
-          {execution.response?.body !== undefined && execution.response?.body !== null && (
-            <pre className="overflow-x-auto text-[11px] text-[#0a0a0a]">
-              {typeof execution.response.body === "string"
-                ? execution.response.body
-                : JSON.stringify(execution.response.body, null, 2)}
-            </pre>
-          )}
-        </div>
-      </td>
-    </tr>
+    <>
+      <tr
+        className={`border-t border-border/80 transition-colors ${
+          expanded ? "bg-card" : "hover:bg-muted-bg/40"
+        }`}
+      >
+        <td className="px-5 py-4 text-[13px] text-ink">
+          <span className="flex items-center gap-2.5">
+            <span
+              className={`h-2 w-2 shrink-0 rounded-full ${
+                run.status === "success"
+                  ? "bg-live"
+                  : run.status === "running"
+                    ? "bg-warning"
+                    : "bg-danger"
+              }`}
+            />
+            {startTime(run.startedAt)}
+          </span>
+        </td>
+        <td className={`px-3 py-4 text-[13px] font-semibold ${statusClass(run)}`}>
+          {statusLabel(run)}
+        </td>
+        <td className="px-3 py-4 text-[13px] text-ink">
+          {run.duration === null ? "—" : `${(run.duration / 1000).toFixed(2)} s`}
+        </td>
+        <td className="hidden px-3 py-4 lg:table-cell">
+          <div className="h-1.5 w-full max-w-[220px] overflow-hidden rounded-full bg-border/70">
+            <div
+              className="h-full rounded-full bg-muted"
+              style={{
+                width: `${Math.max(((run.duration ?? 0) / maxDuration) * 100, 2)}%`,
+              }}
+            />
+          </div>
+        </td>
+        <td className="px-5 py-4 text-right">
+          <button
+            onClick={onToggle}
+            className="rounded-[8px] border border-border bg-card px-3.5 py-1.5 text-[12px] font-medium text-ink transition-colors hover:bg-muted-bg"
+          >
+            {expanded ? "Hide" : "View"}
+          </button>
+        </td>
+      </tr>
+
+      {expanded && (
+        <tr className="bg-card">
+          <td colSpan={5} className="border-b border-border/80 px-5 pb-5">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div>
+                <p className="text-[10.5px] font-bold tracking-[0.06em] text-muted uppercase">
+                  Request
+                </p>
+                <div className="mt-2 rounded-[8px] bg-muted-bg p-4">
+                  <p className="font-mono text-[12px] text-ink">
+                    <span className="font-bold">{job.httpMethod}</span>{" "}
+                    {requestPath(job.httpCommand)}
+                  </p>
+                  {contentType && (
+                    <p className="mt-1 text-[11.5px] text-muted">
+                      Content-type: {contentType}
+                    </p>
+                  )}
+                  {contentLength(job.httpBody) > 0 && (
+                    <pre className="mt-2 overflow-x-auto font-mono text-[11px] whitespace-pre-wrap text-ink">
+                      {JSON.stringify(job.httpBody)}
+                    </pre>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10.5px] font-bold tracking-[0.06em] text-muted uppercase">
+                  Response
+                  {run.statusCode
+                    ? ` · ${run.statusCode} ${STATUS_TEXT[run.statusCode] ?? ""}`.trimEnd()
+                    : ""}
+                </p>
+                <div className="mt-2 rounded-[8px] bg-muted-bg p-4">
+                  {run.error ? (
+                    <p className="font-mono text-[11px] text-danger">{run.error}</p>
+                  ) : body === undefined || body === null ? (
+                    <p className="text-[12px] text-muted">No body returned.</p>
+                  ) : (
+                    <pre className="max-h-64 overflow-auto font-mono text-[11.5px] leading-relaxed text-ink">
+                      {typeof body === "string" ? body : JSON.stringify(body, null, 2)}
+                    </pre>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <button
+                onClick={onCopy}
+                className="inline-flex items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 py-2 text-[12px] font-medium text-ink transition-colors hover:bg-muted-bg"
+              >
+                <Copy size={12} />
+                {copied ? "Copied" : "Copy as cURL"}
+              </button>
+              <button
+                onClick={onRerun}
+                disabled={rerunning}
+                className="inline-flex items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 py-2 text-[12px] font-medium text-ink transition-colors hover:bg-muted-bg disabled:opacity-50"
+              >
+                <RotateCw size={12} className={rerunning ? "animate-spin" : ""} />
+                {rerunning ? "Starting…" : "Re-run"}
+              </button>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }

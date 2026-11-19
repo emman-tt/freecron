@@ -5,6 +5,7 @@ import { Check, ChevronDown, Search } from "lucide-react";
 import type { Job } from "../../jobs/api/job.types";
 import { Toggle } from "../../../shared/ui/Toggle";
 import { formatIn } from "../../../shared/lib/format";
+import { cronSummary } from "../../../shared/lib/cron";
 
 type StatusFilter = "all" | "active" | "paused";
 
@@ -153,7 +154,9 @@ export function JobsPanel({
                     {job.cronExpression}
                   </span>
                   <span className="truncate text-[11.5px] text-muted">
-                    {job.isActive ? nextLine(job.nextRunAt, now) : "paused"}
+                    {job.isActive
+                      ? `${cronSummary(job.cronExpression)} · ${nextLine(job.nextRunAt, now)}`
+                      : `paused · ${cronSummary(job.cronExpression)}`}
                   </span>
                 </div>
                 <span

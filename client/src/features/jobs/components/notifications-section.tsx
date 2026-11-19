@@ -60,7 +60,6 @@ export function NotificationsSection({ jobId }: { jobId: number }) {
           }
           className="rounded-field border border-border bg-card px-3 py-2.5 text-[12px] outline-none"
         >
-          <option value="start">on start</option>
           <option value="failure">on failure</option>
           <option value="success">on success</option>
         </select>

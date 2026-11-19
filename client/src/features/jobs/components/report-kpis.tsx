@@ -1,6 +1,7 @@
 //Report KPIs — server aggregates over ALL history (GET /api/executions/stats)
-//with hover tooltips. "Last failure" = the design's "Down time", renamed for
-//clarity. The chart beside it stays a page-1 series (visual, not a claim)
+//as one strip: value first, label under it, hover explainers. "Last failure"
+//= the design's "Down time", renamed for clarity. The chart beside it stays
+//a page-1 series (visual, not a claim).
 import { Info } from "lucide-react";
 import type { ExecutionStats } from "../../executions/api/execution.types";
 import { dayLabel, durationLabel } from "../../../shared/lib/format";
@@ -16,7 +17,7 @@ const TIPS: Record<string, string> = {
   Highest:
     "Longest measured duration. A run interrupted by a server restart counts the whole outage as runtime, so one outlier can make this look huge.",
   Status:
-    "How the most recent run ended — Up: succeeded (green), Down: failed or timed out (red), Running: in flight (blue). A switched-off job shows Paused.",
+    "How the most recent run ended — Up: succeeded (green), Down: failed or timed out (red), Running: in flight (amber). A switched-off job shows Paused.",
 };
 
 export function ReportKPIs({
@@ -25,10 +26,9 @@ export function ReportKPIs({
 }: {
   stats?: ExecutionStats;
   //a paused job's lastStatus is a relic of when it last ran — the current
-  //truth about the job is "switched off", so Paused (yellow) overrides
+  //truth about the job is "switched off", so Paused (amber) overrides
   jobActive?: boolean;
 }) {
-  //green Up · blue Running · red Down · yellow Paused
   const paused = jobActive === false;
   const status = paused
     ? "Paused"
@@ -40,14 +40,14 @@ export function ReportKPIs({
           ? "Running"
           : "Down";
   const statusColor = paused
-    ? "text-[#EAB308]"
+    ? "text-warning"
     : s?.lastStatus === "success"
-      ? "text-[#22C55E]"
+      ? "text-success"
       : s?.lastStatus === "running"
-        ? "text-[#0EA5E9]"
+        ? "text-warning"
         : s?.lastStatus
-          ? "text-[#FF2E2E]"
-          : undefined;
+          ? "text-danger"
+          : "text-muted";
 
   const kpis: Array<[string, string, string?]> = [
     ["Last failure", s?.lastFailureAt ? dayLabel(s.lastFailureAt) : "None"],
@@ -59,17 +59,22 @@ export function ReportKPIs({
   ];
 
   return (
-    <div className="flex flex-wrap gap-2.5 rounded-[16px] bg-card p-3.5">
+    <div className="grid grid-cols-2 gap-x-6 gap-y-5 rounded-[16px] border border-border/80 bg-card px-6 py-5 sm:grid-cols-3 lg:grid-cols-6">
       {kpis.map(([label, value, color]) => (
-        <div key={label} className="group relative flex min-w-24 flex-1 flex-col gap-0.5">
-          <span className={`text-[15px] font-bold ${color ?? "text-[#0a0a0a]"}`}>
+        <div key={label} className="group relative flex min-w-0 flex-col gap-1">
+          <span
+            className={`truncate text-[24px] leading-none font-bold tracking-[-0.02em] ${
+              color ?? "text-ink"
+            }`}
+            title={value}
+          >
             {value}
           </span>
-          <span className="flex items-center gap-1 text-[11px] text-muted">
+          <span className="flex items-center gap-1 text-[12.5px] text-muted">
             {label}
-            <Info size={11} className="shrink-0 cursor-help text-muted/70" />
+            <Info size={10} className="shrink-0 cursor-help text-muted/60" />
           </span>
-          <span className="pointer-events-none absolute left-0 top-full z-10 mt-1 hidden w-56 rounded-xl bg-[#0a0a0a] p-2.5 text-[11px] leading-snug text-white shadow-lg group-hover:block">
+          <span className="pointer-events-none absolute top-full left-0 z-20 mt-1 hidden w-56 rounded-xl bg-primary p-2.5 text-[11px] leading-snug text-white shadow-lg group-hover:block">
             {TIPS[label]}
           </span>
         </div>

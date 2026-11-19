@@ -102,7 +102,7 @@ export function Shell() {
           </button>
         </div>
       </aside>
-      <main className="flex-1 bg-bg p-7">
+      <main className="min-w-0 flex-1 bg-bg p-7">
         <Outlet />
       </main>
     </div>

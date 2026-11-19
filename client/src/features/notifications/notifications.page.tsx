@@ -21,6 +21,18 @@ function AlertStatus({ job, rules }: { job: Job; rules: Notification[] }) {
   const enabledFailure = failureRules.filter((rule) => rule.enabled).length;
   const active = rules.filter((rule) => rule.enabled).length;
 
+  if (rules.length === 0) {
+    return (
+      <div className="flex items-start gap-2.5 rounded-[12px] border border-warning-border bg-warning-soft px-4 py-3 text-[13px] text-[#6b4e0f]">
+        <AlertTriangle size={16} className="mt-px shrink-0 text-warning" />
+        <p>
+          <span className="font-semibold text-warning">{job.name} has no alert rules. </span>
+          Add a failure rule so an outage reaches you instead of staying in the logs.
+        </p>
+      </div>
+    );
+  }
+
   if (enabledFailure > 0) {
     return (
       <div className="flex items-start gap-2.5 rounded-[12px] border border-[#cdebd8] bg-success-soft px-4 py-3 text-[13px] text-success-strong">
@@ -34,16 +46,21 @@ function AlertStatus({ job, rules }: { job: Job; rules: Notification[] }) {
     );
   }
 
-  const silent = rules.length > 1 ? "All of its rules are off" : "Its only rule is off";
+  const reason =
+    active === 0
+      ? rules.length === 1
+        ? "Its only rule is off"
+        : rules.length === 2
+          ? "Both of its rules are off"
+          : `All ${rules.length} of its rules are off`
+      : "Other alerts are on, but there is no active failure rule";
+
   return (
     <div className="flex items-start gap-2.5 rounded-[12px] border border-warning-border bg-warning-soft px-4 py-3 text-[13px] text-[#6b4e0f]">
       <AlertTriangle size={16} className="mt-px shrink-0 text-warning" />
       <p>
         <span className="font-semibold text-warning">{job.name} is silent. </span>
-        {active > 0
-          ? "Success alerts are on, but the failure rule is off — a failed run will not reach you."
-          : `${silent}, so a failed run will not reach you.`}{" "}
-        Turn the failure rule on first.
+        {reason}, so a failed run will not reach you. Turn the failure rule on first.
       </p>
     </div>
   );
@@ -117,9 +134,7 @@ export function NotificationsPage() {
         </div>
       ) : (
         <>
-          {current && !rules.isLoading && list.length >= 0 && (
-            <AlertStatus job={current} rules={list} />
-          )}
+          {current && !rules.isLoading && <AlertStatus job={current} rules={list} />}
 
           <RulesTable
             jobName={current?.name ?? "…"}
